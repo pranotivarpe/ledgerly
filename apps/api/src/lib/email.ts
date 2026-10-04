@@ -77,3 +77,17 @@ export async function sendEmail({
     logger.info({ to, subject }, `📧 email captured — view at ${env.WEB_URL}/api/dev/emails`);
   }
 }
+
+/**
+ * For notifications that must never break the action that triggered them (receipts, alerts):
+ * failures are logged, not thrown.
+ */
+export async function sendEmailSafely(...args: Parameters<typeof sendEmail>) {
+  try {
+    await sendEmail(...args);
+    return true;
+  } catch (err) {
+    logger.error({ err, to: args[0].to, subject: args[0].subject }, 'notification email failed');
+    return false;
+  }
+}

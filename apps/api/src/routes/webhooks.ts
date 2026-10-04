@@ -8,6 +8,7 @@ import { prisma } from '../lib/prisma.js';
 import { stripe } from '../lib/stripe.js';
 import { retrieveSubscription, syncSubscription } from '../services/billing.service.js';
 import { recordInvoiceCheckout } from '../services/invoice-payment.service.js';
+import { notifyBillingFailed } from '../services/notification.service.js';
 
 export const webhooksRouter = Router();
 
@@ -59,6 +60,7 @@ async function handleEvent(event: Stripe.Event) {
       ? await prisma.organization.findUnique({ where: { stripeCustomerId: customer } })
       : null;
     if (org) {
+      await notifyBillingFailed(org, invoice.amount_due, invoice.currency);
       await prisma.activityLog.create({
         data: {
           organizationId: org.id,

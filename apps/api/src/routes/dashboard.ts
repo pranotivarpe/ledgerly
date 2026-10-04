@@ -3,6 +3,7 @@ import { startOfMonth } from '../lib/plans.js';
 import { getTenant } from '../middleware/tenant.js';
 import { markOverdue } from '../services/invoice.service.js';
 import { usage } from '../services/plan-limits.service.js';
+import { revenueByMonth, topClients } from '../services/revenue.service.js';
 
 export const dashboardRouter = Router({ mergeParams: true });
 
@@ -12,6 +13,14 @@ dashboardRouter.get('/', async (req, res) => {
 
   const monthStart = startOfMonth();
   const lastMonthStart = startOfMonth(new Date(monthStart.getTime() - 1));
+  // Compare month-to-date with the same number of days last month, not the whole month.
+  const lastMonthSamePoint = new Date(
+    Math.min(lastMonthStart.getTime() + (Date.now() - monthStart.getTime()), monthStart.getTime()),
+  );
+  const [revenue, clients] = await Promise.all([
+    revenueByMonth(organization.id),
+    topClients(organization.id),
+  ]);
 
   const [
     collected,
@@ -25,7 +34,7 @@ dashboardRouter.get('/', async (req, res) => {
   ] = await Promise.all([
     db.payment.aggregate({ where: { paidAt: { gte: monthStart } }, _sum: { amountCents: true } }),
     db.payment.aggregate({
-      where: { paidAt: { gte: lastMonthStart, lt: monthStart } },
+      where: { paidAt: { gte: lastMonthStart, lt: lastMonthSamePoint } },
       _sum: { amountCents: true },
     }),
     db.invoice.aggregate({
@@ -82,5 +91,7 @@ dashboardRouter.get('/', async (req, res) => {
       createdAt: a.createdAt,
     })),
     usage: planUsage,
+    revenueByMonth: revenue,
+    topClients: clients,
   });
 });

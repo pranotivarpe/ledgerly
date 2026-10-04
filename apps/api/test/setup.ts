@@ -6,3 +6,4 @@ process.env.JWT_ACCESS_SECRET ??= 'test-access-secret-that-is-at-least-32-chars'
 process.env.JWT_REFRESH_SECRET ??= 'test-refresh-secret-that-is-at-least-32-chars';
 process.env.STRIPE_SECRET_KEY = 'sk_test_dummy_key_for_tests';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_secret';
+process.env.CRON_SECRET = 'test-cron-secret-123456';

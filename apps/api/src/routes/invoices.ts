@@ -21,11 +21,7 @@ import {
   toPdfData,
 } from '../services/invoice.service.js';
 import { assertCanCreateInvoice } from '../services/plan-limits.service.js';
-import {
-  createPortalLinkUrl,
-  findOrCreateContact,
-  INVITE_LINK_TTL_DAYS,
-} from '../services/portal.service.js';
+import { invoicePayLink } from '../services/portal.service.js';
 
 export const invoicesRouter = Router({ mergeParams: true });
 
@@ -108,19 +104,6 @@ async function assertRelations(req: Request, clientId: string, projectId?: strin
       });
     }
   }
-}
-
-/** A 7-day portal sign-in link that lands on this invoice (omitted if the email maps to another client). */
-async function payLink(
-  org: { id: string; slug: string },
-  invoice: { id: string; clientId: string; client: { email: string } },
-) {
-  const contact = await findOrCreateContact(org.id, invoice.client.email);
-  if (!contact || contact.clientId !== invoice.clientId) return undefined;
-  return createPortalLinkUrl(org, contact.id, {
-    ttlMs: INVITE_LINK_TTL_DAYS * 24 * 60 * 60 * 1000,
-    next: `/portal/${org.slug}/invoices/${invoice.id}`,
-  });
 }
 
 // ─── Read ────────────────────────────────────────────────────────────────────
@@ -305,7 +288,7 @@ invoicesRouter.post('/:invoiceId/send', requirePermission('invoices:write'), asy
   const isReminder = invoice.status !== 'DRAFT';
   const [pdf, payUrl] = await Promise.all([
     renderInvoicePdf(toPdfData(invoice, organization)),
-    payLink(organization, invoice),
+    invoicePayLink(organization, invoice),
   ]);
   const dueDate = new Intl.DateTimeFormat('en-US', {
     month: 'long',

@@ -284,6 +284,6 @@ describe('member management', () => {
     const a = await teamOf('MEMBER');
     const b = await signUp();
     expect((await remove(b.agent, a.slug, a.others[0]!.membershipId)).status).toBe(404);
-    expect(getOutbox()).toHaveLength(0);
+    expect(getOutbox().filter((e) => e.subject.includes('invited you'))).toHaveLength(0);
   });
 });

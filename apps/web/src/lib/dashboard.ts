@@ -38,6 +38,8 @@ export type Dashboard = {
     invoicesThisMonth: number;
     limits: { seats: number; clients: number | null; invoicesPerMonth: number | null };
   };
+  revenueByMonth: { month: string; totalCents: number }[];
+  topClients: { id: string; name: string; totalCents: number }[];
 };
 
 export function useDashboard(slug: string) {

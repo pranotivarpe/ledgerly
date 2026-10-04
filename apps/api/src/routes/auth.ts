@@ -16,6 +16,7 @@ import {
   findInvitationByToken,
   invitationState,
 } from '../services/invitation.service.js';
+import { sendWelcome } from '../services/notification.service.js';
 import { createSession, revokeSession, rotateSession } from '../services/session.service.js';
 
 export const authRouter = Router();
@@ -105,6 +106,7 @@ authRouter.post('/signup', authLimiter, async (req, res) => {
     return { user, organization };
   });
 
+  await sendWelcome(user, organization);
   const tokens = await createSession(user.id, req);
   setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
   res

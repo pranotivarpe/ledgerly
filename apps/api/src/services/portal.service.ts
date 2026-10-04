@@ -98,3 +98,16 @@ export async function consumeMagicLink(organizationId: string, token: string) {
   });
   return link.contact;
 }
+
+/** A 7-day sign-in link that lands on one invoice (omitted if the email maps to another client). */
+export async function invoicePayLink(
+  org: { id: string; slug: string },
+  invoice: { id: string; clientId: string; client: { email: string } },
+) {
+  const contact = await findOrCreateContact(org.id, invoice.client.email);
+  if (!contact || contact.clientId !== invoice.clientId) return undefined;
+  return createPortalLinkUrl(org, contact.id, {
+    ttlMs: INVITE_LINK_TTL_DAYS * 24 * 60 * 60 * 1000,
+    next: `/portal/${org.slug}/invoices/${invoice.id}`,
+  });
+}

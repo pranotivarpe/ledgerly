@@ -13,6 +13,12 @@ const schema = z.object({
   EMAIL_FROM: z.string().default('Ledgerly <onboarding@resend.dev>'),
   STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  // Background jobs: in-process scheduler (single server) and/or an authenticated cron endpoint.
+  JOBS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 const parsed = schema.safeParse(process.env);

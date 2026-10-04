@@ -12,6 +12,7 @@ import {
 import { Link, useNavigate } from 'react-router';
 import { ActivityFeed } from '@/components/activity-feed';
 import { PageHeader } from '@/components/page-header';
+import { RevenueChart, TopClients } from '@/components/revenue-chart';
 import { InvoiceStatusBadge } from '@/components/status-badges';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +59,10 @@ export function DashboardPage() {
           <GettingStarted data={data} />
           <StatCards data={data} />
           <div className="mt-6 grid gap-6 lg:grid-cols-3">
+            <RevenueChart data={data.revenueByMonth} currency={data.currency} />
+            <TopClients clients={data.topClients} currency={data.currency} />
+          </div>
+          <div className="mt-6 grid gap-6 lg:grid-cols-3">
             <RecentInvoices data={data} />
             <div className="space-y-6">
               <PlanUsage data={data} />
@@ -96,7 +101,7 @@ function StatCards({ data }: { data: Dashboard }) {
       icon: CircleDollarSign,
       sub:
         delta === null ? (
-          <span>No payments last month</span>
+          <span>Nothing collected this time last month</span>
         ) : (
           <span
             className={cn(
@@ -109,7 +114,7 @@ function StatCards({ data }: { data: Dashboard }) {
             ) : (
               <ArrowDownRight className="size-3.5" />
             )}
-            {Math.abs(delta)}% vs last month
+            {Math.abs(delta)}% vs same time last month
           </span>
         ),
     },
@@ -151,7 +156,7 @@ function StatCards({ data }: { data: Dashboard }) {
             </div>
             <p
               className={cn(
-                'mt-1 text-2xl font-semibold tracking-tight tabular-nums',
+                'mt-1 text-2xl font-semibold tracking-tight',
                 c.danger && 'text-destructive',
               )}
             >

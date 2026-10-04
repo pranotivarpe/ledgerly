@@ -36,11 +36,18 @@ function describe(a: ActivityItem, currency: string): { icon: LucideIcon; text: 
     case 'invoice.sent':
       return { icon: Mail, text: `${who} sent ${m.number} to ${m.to}` };
     case 'invoice.reminder_sent':
-      return { icon: Mail, text: `${who} sent a reminder for ${m.number}` };
+      return {
+        icon: Mail,
+        text: m.automatic
+          ? `Automatic reminder sent for ${m.number}`
+          : `${who} sent a reminder for ${m.number}`,
+      };
+    case 'client.portal_invited':
+      return { icon: Mail, text: `${who} invited ${m.name} to the client portal` };
     case 'invoice.paid':
       return {
         icon: CircleCheck,
-        text: `${m.number} was marked paid${typeof m.amountCents === 'number' ? ` · ${formatMoney(m.amountCents, currency)}` : ''}`,
+        text: `${m.number} was ${m.method === 'STRIPE' ? 'paid online' : 'marked paid'}${typeof m.amountCents === 'number' ? ` · ${formatMoney(m.amountCents, currency)}` : ''}`,
       };
     case 'invoice.voided':
       return { icon: XCircle, text: `${who} voided ${m.number}` };

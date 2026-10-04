@@ -220,12 +220,10 @@ describe('paying invoices', () => {
   it('creates a Checkout session for the exact invoice total', async () => {
     const { slug, sent, owner } = await agencyWithInvoices();
     const client = await portalLogin(slug);
-    const create = vi
-      .spyOn(stripe.checkout.sessions, 'create')
-      .mockResolvedValue({
-        id: 'cs_test_1',
-        url: 'https://checkout.stripe.com/c/pay/cs_test_1',
-      } as never);
+    const create = vi.spyOn(stripe.checkout.sessions, 'create').mockResolvedValue({
+      id: 'cs_test_1',
+      url: 'https://checkout.stripe.com/c/pay/cs_test_1',
+    } as never);
 
     const res = await client
       .post(`/api/portal/${slug}/invoices/${sent.id}/pay`)

@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import { Prisma } from '../generated/prisma/client.js';
 import { logger } from '../lib/logger.js';
 import { prisma } from '../lib/prisma.js';
+import { notifyInvoicePaidOnline } from './notification.service.js';
 
 /**
  * Records a successful Stripe Checkout payment for an invoice. Called from both the webhook and the
@@ -59,5 +60,8 @@ export async function recordInvoiceCheckout(session: Stripe.Checkout.Session) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return invoice;
     throw err;
   }
+
+  // Only the path that actually recorded the payment sends the emails — so they go out once.
+  await notifyInvoicePaidOnline(invoice.id);
   return invoice;
 }

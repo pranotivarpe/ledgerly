@@ -51,6 +51,17 @@ online through a branded portal. Agencies pay for Ledgerly itself through Stripe
   _Upgrade path:_ payments currently settle to the platform's Stripe account; in production each
   agency would connect its own account with **Stripe Connect** (`transfer_data.destination`), which
   this design supports without changing the invoice flow.
+- **Background jobs:** an hourly overdue-reminder job (Pro/Team feature) emails clients the PDF
+  and a pay link, at most every 3 days and only within 60 days of the due date. Each invoice is
+  _claimed_ with a conditional update before sending, so running the job on several servers at once
+  can never double-send. It runs in-process on a single server, or through an authenticated
+  `POST /api/jobs/overdue-reminders` cron endpoint for serverless or multi-instance hosting.
+- **Transactional email:** welcome, team invite, invoice + PDF, client portal sign-in, payment
+  receipt (client), "you got paid" (owners/admins), failed subscription payment (owners), and
+  overdue reminders. Notifications never fail the action that triggered them.
+- **Analytics:** monthly revenue and top clients via SQL `date_trunc` aggregation (explicitly
+  tenant-filtered, since raw SQL bypasses the scoping extension). The chart is hand-built SVG with
+  clean axis ticks, hover/keyboard tooltips and a table view for accessibility.
 - **Billing:** Stripe Checkout for new subscriptions, in-app plan switching with proration, and the
   Stripe Customer Portal for cards, invoices and cancellation. Webhooks are signature-verified,
   processed exactly once (`StripeEvent` table), and never trust the event payload: they re-fetch
@@ -75,6 +86,7 @@ npm install
 cp apps/api/.env.example apps/api/.env      # then fill in DATABASE_URL and the JWT secrets
 createdb ledgerly && createdb ledgerly_test
 npm run db:migrate                          # apply migrations and generate the Prisma client
+npm run db:seed                             # optional: demo agency with a year of data
 npm run dev                                 # API on :4100, web on :5180
 ```
 
@@ -93,5 +105,5 @@ npm run dev                                 # API on :4100, web on :5180
 - [x] **Phase 4:** clients, projects, invoices, PDF export
 - [x] **Phase 5:** Stripe subscriptions, webhooks, billing page, plan limits
 - [x] **Phase 6:** client portal with online invoice payments
-- [ ] **Phase 7:** revenue dashboard, transactional emails, overdue reminders
+- [x] **Phase 7:** revenue dashboard, transactional emails, overdue reminders
 - [ ] **Phase 8:** demo data, end-to-end tests, deployment
