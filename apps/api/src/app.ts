@@ -15,6 +15,7 @@ import { jobsRouter } from './routes/jobs.js';
 import { organizationsRouter } from './routes/organizations.js';
 import { portalRouter } from './routes/portal.js';
 import { webhooksRouter } from './routes/webhooks.js';
+import { serveWebApp } from './static.js';
 
 export function createApp() {
   const app = express();
@@ -38,6 +39,8 @@ export function createApp() {
   app.use('/api/portal/:orgSlug', portalRouter);
   app.use('/api/jobs', jobsRouter);
   if (!isProd) app.use('/api/dev', devRouter);
+
+  if (isProd) serveWebApp(app);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

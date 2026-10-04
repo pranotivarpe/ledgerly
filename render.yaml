@@ -1,0 +1,39 @@
+# Render Blueprint — one web service serves the API and the React app on the same origin.
+# Database: Neon Postgres (set DATABASE_URL). Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: ledgerly
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run db:deploy -w apps/api && npm run start -w apps/api
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: '24'
+      - key: DATABASE_URL
+        sync: false # Neon pooled connection string
+      - key: WEB_URL
+        sync: false # e.g. https://ledgerly.onrender.com
+      - key: API_URL
+        sync: false # same as WEB_URL
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
+      - key: DEMO_ENABLED
+        value: 'true'
+      - key: JOBS_ENABLED
+        value: 'true'
