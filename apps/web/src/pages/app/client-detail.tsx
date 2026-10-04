@@ -1,5 +1,9 @@
 import {
   Archive,
+  Check,
+  Copy,
+  ExternalLink,
+  Globe,
   ArchiveRestore,
   ArrowLeft,
   FileText,
@@ -28,7 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FullPageSpinner } from '@/components/ui/spinner';
+import { FullPageSpinner, Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -37,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useClient, useDeleteClient, useUpdateClient } from '@/lib/clients';
+import { useClient, useDeleteClient, usePortalInvite, useUpdateClient } from '@/lib/clients';
 import { useCan, useCurrentOrg } from '@/lib/org-context';
 import { toastError } from '@/lib/plan-limit';
 import type { ProjectStatus } from '@/lib/projects';
@@ -234,40 +238,49 @@ export function ClientDetailPage() {
           </Card>
         </div>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Contact</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <p className="flex items-start gap-3">
-              <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <a href={`mailto:${client.email}`} className="break-all text-primary hover:underline">
-                {client.email}
-              </a>
-            </p>
-            {client.phone && (
+        <div className="space-y-6">
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle>Contact</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
               <p className="flex items-start gap-3">
-                <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" /> {client.phone}
+                <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <a
+                  href={`mailto:${client.email}`}
+                  className="break-all text-primary hover:underline"
+                >
+                  {client.email}
+                </a>
               </p>
-            )}
-            {client.address && (
-              <p className="flex items-start gap-3 whitespace-pre-line">
-                <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" /> {client.address}
-              </p>
-            )}
-            {client.notes && (
-              <div className="rounded-md bg-muted p-3">
-                <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <FileText className="size-3.5" /> Internal notes
+              {client.phone && (
+                <p className="flex items-start gap-3">
+                  <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" /> {client.phone}
                 </p>
-                <p className="whitespace-pre-line">{client.notes}</p>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Client since {formatDate(client.createdAt)}
-            </p>
-          </CardContent>
-        </Card>
+              )}
+              {client.address && (
+                <p className="flex items-start gap-3 whitespace-pre-line">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />{' '}
+                  {client.address}
+                </p>
+              )}
+              {client.notes && (
+                <div className="rounded-md bg-muted p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <FileText className="size-3.5" /> Internal notes
+                  </p>
+                  <p className="whitespace-pre-line">{client.notes}</p>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Client since {formatDate(client.createdAt)}
+              </p>
+            </CardContent>
+          </Card>
+          {!archived && (
+            <PortalAccessCard clientId={client.id} email={client.email} canInvite={canWrite} />
+          )}
+        </div>
       </div>
 
       <ClientFormDialog open={editOpen} onOpenChange={setEditOpen} client={client} />
@@ -298,5 +311,79 @@ export function ClientDetailPage() {
         }
       />
     </>
+  );
+}
+
+function PortalAccessCard({
+  clientId,
+  email,
+  canInvite,
+}: {
+  clientId: string;
+  email: string;
+  canInvite: boolean;
+}) {
+  const org = useCurrentOrg();
+  const invite = usePortalInvite(org.slug);
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/portal/${org.slug}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy — select the link instead");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="size-4 text-muted-foreground" /> Client portal
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          This client signs in with <span className="font-medium text-foreground">{email}</span> to
+          view and pay their invoices online.
+        </p>
+        <div className="flex items-center gap-1 rounded-md border bg-muted/50 py-1 pr-1 pl-3">
+          <span className="flex-1 truncate font-mono text-xs">{url}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={copy}
+            aria-label="Copy portal link"
+          >
+            {copied ? <Check className="text-success" /> : <Copy />}
+          </Button>
+          <Button variant="ghost" size="icon" className="size-7" asChild>
+            <a href={url} target="_blank" rel="noreferrer" aria-label="Open portal">
+              <ExternalLink />
+            </a>
+          </Button>
+        </div>
+        {canInvite && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            disabled={invite.isPending}
+            onClick={() =>
+              invite.mutate(clientId, {
+                onSuccess: () => toast.success(`Sign-in link sent to ${email}`),
+                onError: (err) => toast.error(err.message),
+              })
+            }
+          >
+            {invite.isPending ? <Spinner /> : <Mail />} Email a sign-in link
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

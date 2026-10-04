@@ -1,6 +1,10 @@
 import type { CookieOptions, Response } from 'express';
 import { isProd } from '../env.js';
-import { ACCESS_TOKEN_TTL_SECONDS, REFRESH_TOKEN_TTL_MS } from './tokens.js';
+import {
+  ACCESS_TOKEN_TTL_SECONDS,
+  PORTAL_SESSION_TTL_SECONDS,
+  REFRESH_TOKEN_TTL_MS,
+} from './tokens.js';
 
 export const ACCESS_COOKIE = 'll_access';
 export const REFRESH_COOKIE = 'll_refresh';
@@ -26,4 +30,16 @@ export function setAuthCookies(res: Response, accessToken: string, refreshToken:
 export function clearAuthCookies(res: Response) {
   res.clearCookie(ACCESS_COOKIE, { ...base, path: '/' });
   res.clearCookie(REFRESH_COOKIE, refreshOptions);
+}
+
+// Client portal session — scoped to the portal API only.
+export const PORTAL_COOKIE = 'll_portal';
+const portalOptions: CookieOptions = { ...base, path: '/api/portal' };
+
+export function setPortalCookie(res: Response, token: string) {
+  res.cookie(PORTAL_COOKIE, token, { ...portalOptions, maxAge: PORTAL_SESSION_TTL_SECONDS * 1000 });
+}
+
+export function clearPortalCookie(res: Response) {
+  res.clearCookie(PORTAL_COOKIE, portalOptions);
 }

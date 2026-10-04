@@ -16,11 +16,26 @@ import { LoginPage } from '@/pages/auth/login';
 import { SignupPage } from '@/pages/auth/signup';
 import { LandingPage } from '@/pages/marketing/landing';
 import { InvitePage } from '@/pages/invite';
+import { PortalInvoicePage } from '@/pages/portal/invoice';
+import { PortalInvoicesPage } from '@/pages/portal/invoices';
+import { PortalLoginPage } from '@/pages/portal/login';
+import { PortalLayout } from '@/pages/portal/portal-layout';
+import { PortalVerifyPage } from '@/pages/portal/verify';
 import { NotFoundPage } from '@/pages/not-found';
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
   { path: '/invite/:token', element: <InvitePage /> },
+  {
+    path: '/portal/:orgSlug',
+    element: <PortalLayout />,
+    children: [
+      { index: true, element: <PortalLoginPage /> },
+      { path: 'verify', element: <PortalVerifyPage /> },
+      { path: 'invoices', element: <PortalInvoicesPage /> },
+      { path: 'invoices/:invoiceId', element: <PortalInvoicePage /> },
+    ],
+  },
   {
     element: <GuestOnly />,
     children: [

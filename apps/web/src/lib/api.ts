@@ -40,7 +40,8 @@ async function request(path: string, { body, headers, ...init }: Options) {
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
   let res = await request(path, options);
 
-  if (res.status === 401 && !path.startsWith('/auth/')) {
+  // Portal sessions use magic links, not refresh tokens.
+  if (res.status === 401 && !path.startsWith('/auth/') && !path.startsWith('/portal/')) {
     if (await refreshSession()) res = await request(path, options);
   }
 

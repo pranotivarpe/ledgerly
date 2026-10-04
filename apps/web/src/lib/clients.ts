@@ -101,3 +101,10 @@ export function useDeleteClient(slug: string) {
     onSuccess: invalidate,
   });
 }
+
+export function usePortalInvite(slug: string) {
+  return useMutation({
+    mutationFn: (clientId: string) =>
+      api<{ sent: true }>(`/orgs/${slug}/clients/${clientId}/portal-invite`, { method: 'POST' }),
+  });
+}

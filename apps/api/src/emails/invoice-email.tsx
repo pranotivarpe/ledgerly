@@ -1,4 +1,4 @@
-import { Heading, Section, Text } from '@react-email/components';
+import { Button, Heading, Section, Text } from '@react-email/components';
 import { EmailLayout, colors, styles } from './layout.js';
 
 export type InvoiceEmailProps = {
@@ -8,6 +8,8 @@ export type InvoiceEmailProps = {
   amount: string;
   dueDate: string;
   reminder?: boolean;
+  /** Magic link that signs the client into the portal on this invoice. */
+  payUrl?: string;
 };
 
 export function InvoiceEmail({
@@ -17,6 +19,7 @@ export function InvoiceEmail({
   amount,
   dueDate,
   reminder,
+  payUrl,
 }: InvoiceEmailProps) {
   return (
     <EmailLayout
@@ -45,6 +48,11 @@ export function InvoiceEmail({
         </Text>
         <Text style={{ ...styles.muted, margin: 0 }}>Due {dueDate}</Text>
       </Section>
+      {payUrl && (
+        <Button href={payUrl} style={styles.button}>
+          View &amp; pay invoice
+        </Button>
+      )}
       <Text style={styles.muted}>Questions about this invoice? Just reply to this email.</Text>
     </EmailLayout>
   );

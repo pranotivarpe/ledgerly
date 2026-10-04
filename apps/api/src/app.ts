@@ -12,6 +12,7 @@ import { devRouter } from './routes/dev.js';
 import { healthRouter } from './routes/health.js';
 import { invitationsRouter } from './routes/invitations.js';
 import { organizationsRouter } from './routes/organizations.js';
+import { portalRouter } from './routes/portal.js';
 import { webhooksRouter } from './routes/webhooks.js';
 
 export function createApp() {
@@ -33,6 +34,7 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/orgs', organizationsRouter);
   app.use('/api/invitations', invitationsRouter);
+  app.use('/api/portal/:orgSlug', portalRouter);
   if (!isProd) app.use('/api/dev', devRouter);
 
   app.use(notFoundHandler);

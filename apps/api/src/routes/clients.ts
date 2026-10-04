@@ -2,10 +2,16 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { logActivity } from '../lib/activity.js';
 import { HttpError } from '../lib/http-error.js';
-import { getTenant, requirePermission } from '../middleware/tenant.js';
+import { prisma } from '../lib/prisma.js';
+import { getAuth, getTenant, requirePermission } from '../middleware/tenant.js';
 import { parseBody } from '../middleware/validate.js';
 import { markOverdue } from '../services/invoice.service.js';
 import { assertCanAddClient } from '../services/plan-limits.service.js';
+import {
+  findOrCreateContact,
+  INVITE_LINK_TTL_DAYS,
+  sendPortalLink,
+} from '../services/portal.service.js';
 
 export const clientsRouter = Router({ mergeParams: true });
 
@@ -173,3 +179,37 @@ clientsRouter.delete('/:clientId', requirePermission('clients:write'), async (re
   );
   res.status(204).end();
 });
+
+/** Emails the client a 7-day sign-in link to the client portal. */
+clientsRouter.post(
+  '/:clientId/portal-invite',
+  requirePermission('clients:write'),
+  async (req, res) => {
+    const { db, organization } = getTenant(req);
+    const client = await db.client.findUnique({ where: { id: String(req.params.clientId) } });
+    if (!client || client.archivedAt) throw HttpError.notFound('Client not found');
+
+    const contact = await findOrCreateContact(organization.id, client.email);
+    if (!contact || contact.clientId !== client.id) {
+      throw HttpError.conflict(
+        `${client.email} is already used as the portal login for another client`,
+      );
+    }
+    const inviter = await prisma.user.findUniqueOrThrow({
+      where: { id: getAuth(req).userId },
+      select: { name: true },
+    });
+    await sendPortalLink(organization, contact, {
+      ttlMs: INVITE_LINK_TTL_DAYS * 24 * 60 * 60 * 1000,
+      next: `/portal/${organization.slug}/invoices`,
+      invitedBy: inviter.name,
+    });
+    await logActivity(
+      req,
+      'client.portal_invited',
+      { type: 'client', id: client.id },
+      { name: client.name, email: client.email },
+    );
+    res.json({ sent: true });
+  },
+);

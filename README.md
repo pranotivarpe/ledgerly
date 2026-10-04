@@ -39,6 +39,18 @@ online through a branded portal. Agencies pay for Ledgerly itself through Stripe
   Invoice numbers come from an atomic per-organization sequence (safe under concurrent requests).
   Sent invoices are immutable (void and duplicate to correct them), and branded PDFs are rendered
   server-side with `@react-pdf/renderer` and attached to the invoice email.
+- **Client portal:** each agency gets a branded portal at `/portal/:slug`. Clients sign in with
+  single-use magic links (no passwords). Links are consumed by a POST from the page, never by the
+  GET, so corporate email scanners can't burn them. Portal sessions use a separate cookie and JWT
+  audience, so agency and client sessions can never be swapped. Clients only see their own,
+  non-draft invoices, and access is revoked the moment a client is archived. Invoice emails include a
+  "View & pay" link that signs the client straight into that invoice.
+- **Invoice payments:** clients pay through Stripe Checkout. Payments are recorded from both the
+  webhook and the return-from-Checkout confirmation, made exactly-once by the unique payment-intent
+  ID. The confirmation verifies the session belongs to that invoice.
+  _Upgrade path:_ payments currently settle to the platform's Stripe account; in production each
+  agency would connect its own account with **Stripe Connect** (`transfer_data.destination`), which
+  this design supports without changing the invoice flow.
 - **Billing:** Stripe Checkout for new subscriptions, in-app plan switching with proration, and the
   Stripe Customer Portal for cards, invoices and cancellation. Webhooks are signature-verified,
   processed exactly once (`StripeEvent` table), and never trust the event payload: they re-fetch
@@ -80,6 +92,6 @@ npm run dev                                 # API on :4100, web on :5180
 - [x] **Phase 3:** team invitations and role-based access
 - [x] **Phase 4:** clients, projects, invoices, PDF export
 - [x] **Phase 5:** Stripe subscriptions, webhooks, billing page, plan limits
-- [ ] **Phase 6:** client portal with online invoice payments
+- [x] **Phase 6:** client portal with online invoice payments
 - [ ] **Phase 7:** revenue dashboard, transactional emails, overdue reminders
 - [ ] **Phase 8:** demo data, end-to-end tests, deployment

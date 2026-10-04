@@ -7,6 +7,7 @@ import { logger } from '../lib/logger.js';
 import { prisma } from '../lib/prisma.js';
 import { stripe } from '../lib/stripe.js';
 import { retrieveSubscription, syncSubscription } from '../services/billing.service.js';
+import { recordInvoiceCheckout } from '../services/invoice-payment.service.js';
 
 export const webhooksRouter = Router();
 
@@ -19,8 +20,15 @@ const SUBSCRIPTION_EVENTS = new Set([
 ]);
 
 async function handleEvent(event: Stripe.Event) {
-  if (event.type === 'checkout.session.completed') {
+  if (
+    event.type === 'checkout.session.completed' ||
+    event.type === 'checkout.session.async_payment_succeeded'
+  ) {
     const session = event.data.object;
+    if (session.mode === 'payment') {
+      await recordInvoiceCheckout(session); // a client paid an invoice through the portal
+      return;
+    }
     if (session.mode !== 'subscription' || !session.subscription) return;
     const orgId = session.client_reference_id ?? session.metadata?.organizationId;
     if (orgId && session.customer) {
