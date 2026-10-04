@@ -6,7 +6,10 @@ import { pinoHttp } from 'pino-http';
 import { env } from './env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
+import { originCheck } from './middleware/origin-check.js';
+import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
+import { organizationsRouter } from './routes/organizations.js';
 
 export function createApp() {
   const app = express();
@@ -19,8 +22,11 @@ export function createApp() {
   app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/api/health' } }));
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
+  app.use(originCheck);
 
   app.use('/api/health', healthRouter);
+  app.use('/api/auth', authRouter);
+  app.use('/api/orgs', organizationsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

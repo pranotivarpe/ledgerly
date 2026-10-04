@@ -3,6 +3,8 @@ import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMe } from '@/lib/auth';
+import { useCurrentOrg } from '@/lib/org-context';
 import { formatMoney } from '@/lib/utils';
 
 const STATS = [
@@ -11,12 +13,21 @@ const STATS = [
   { label: 'Overdue', value: 0, icon: AlertCircle },
 ];
 
+function greeting() {
+  const hour = new Date().getHours();
+  return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+}
+
 export function DashboardPage() {
+  const org = useCurrentOrg();
+  const { data: me } = useMe();
+  const firstName = me?.user.name.split(' ')[0];
+
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        description="An overview of your agency's billing."
+        title={`${greeting()}${firstName ? `, ${firstName}` : ''}`}
+        description={`Here's how ${org.name} is doing.`}
         actions={
           <Button>
             <Plus /> New invoice
@@ -29,7 +40,9 @@ export function DashboardPage() {
             <CardContent className="flex items-start justify-between p-5">
               <div>
                 <p className="text-sm text-muted-foreground">{s.label}</p>
-                <p className="mt-2 text-2xl font-semibold tabular-nums">{formatMoney(s.value)}</p>
+                <p className="mt-2 text-2xl font-semibold tabular-nums">
+                  {formatMoney(s.value, org.currency)}
+                </p>
               </div>
               <div className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
                 <s.icon className="size-4" />

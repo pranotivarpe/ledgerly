@@ -3,7 +3,7 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public code?: string,
-    public details?: unknown,
+    public details?: { fieldErrors?: Record<string, string[] | undefined> },
   ) {
     super(message);
   }
@@ -11,14 +11,38 @@ export class ApiError extends Error {
 
 type Options = Omit<RequestInit, 'body'> & { body?: unknown };
 
-/** Thin fetch wrapper: JSON in/out, cookies included, typed errors. */
-export async function api<T>(path: string, { body, headers, ...init }: Options = {}): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+let refreshing: Promise<boolean> | null = null;
+
+/** One refresh at a time, shared by every request that hit a 401 concurrently. */
+function refreshSession(): Promise<boolean> {
+  refreshing ??= fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+    .then((r) => r.ok)
+    .catch(() => false)
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
+
+async function request(path: string, { body, headers, ...init }: Options) {
+  return fetch(`/api${path}`, {
     credentials: 'include',
     headers: { ...(body !== undefined && { 'Content-Type': 'application/json' }), ...headers },
     body: body !== undefined ? JSON.stringify(body) : undefined,
     ...init,
   });
+}
+
+/**
+ * Thin fetch wrapper: JSON in/out, cookies included, typed errors.
+ * When the 15-minute access token expires, it silently refreshes once and retries.
+ */
+export async function api<T>(path: string, options: Options = {}): Promise<T> {
+  let res = await request(path, options);
+
+  if (res.status === 401 && !path.startsWith('/auth/')) {
+    if (await refreshSession()) res = await request(path, options);
+  }
 
   if (res.status === 204) return undefined as T;
 

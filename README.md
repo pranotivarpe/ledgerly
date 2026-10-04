@@ -22,10 +22,15 @@ online through a branded portal. Agencies pay for Ledgerly itself through Stripe
 ## Architecture highlights
 
 - **Multi-tenancy:** shared database, shared schema. Every tenant-owned row carries an
-  `organizationId`, and all queries go through a tenant-scoped data access layer so one agency can
-  never read another's data.
+  `organizationId`. Route handlers only get a tenant-scoped Prisma client
+  ([`forTenant()`](apps/api/src/lib/tenant.ts)) that injects the organization into every query, so
+  one agency can never read or modify another's data. This is covered by
+  [isolation tests](apps/api/test/tenant-isolation.test.ts).
 - **Role-based access:** Owner / Admin / Member roles per organization, checked on the server for
   every request. Client contacts get a separate, read-and-pay-only portal.
+- **Authentication:** short-lived JWT access token + rotating, revocable refresh token, both in
+  httpOnly cookies. Passwords hashed with scrypt. Origin-checked against CSRF, rate-limited auth
+  endpoints, no account enumeration on login.
 - **Billing:** Stripe webhooks are the source of truth for subscription state, processed
   idempotently. Plan limits (seats, clients, invoices per month) are enforced by the API.
 
@@ -59,7 +64,7 @@ npm run dev                                 # API on :4100, web on :5180
 ## Roadmap
 
 - [x] **Phase 1:** monorepo scaffold, data model, API foundation, UI shell, CI
-- [ ] **Phase 2:** authentication, organizations, tenant isolation
+- [x] **Phase 2:** authentication, organizations, tenant isolation
 - [ ] **Phase 3:** team invitations and role-based access
 - [ ] **Phase 4:** clients, projects, invoices, PDF export
 - [ ] **Phase 5:** Stripe subscriptions, webhooks, billing page, plan limits
