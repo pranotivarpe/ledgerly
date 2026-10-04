@@ -1,0 +1,68 @@
+# Ledgerly
+
+**Multi-tenant client portal and invoicing SaaS for small agencies.**
+
+Agencies sign up, invite their team, manage clients and projects, and send invoices that clients pay
+online through a branded portal. Agencies pay for Ledgerly itself through Stripe subscriptions.
+
+> 🚧 In active development. See the [roadmap](#roadmap) for progress.
+
+## Tech stack
+
+| Layer    | Tech                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------ |
+| Frontend | React 19, Vite, TypeScript, Tailwind CSS v4, shadcn-style UI, TanStack Query, React Router |
+| Backend  | Node.js, Express 5, TypeScript, Zod                                                        |
+| Database | PostgreSQL, Prisma ORM                                                                     |
+| Payments | Stripe Billing (subscriptions + webhooks), Stripe Checkout                                 |
+| Email    | Resend + React Email                                                                       |
+| Testing  | Vitest, Supertest, Playwright                                                              |
+| CI       | GitHub Actions                                                                             |
+
+## Architecture highlights
+
+- **Multi-tenancy:** shared database, shared schema. Every tenant-owned row carries an
+  `organizationId`, and all queries go through a tenant-scoped data access layer so one agency can
+  never read another's data.
+- **Role-based access:** Owner / Admin / Member roles per organization, checked on the server for
+  every request. Client contacts get a separate, read-and-pay-only portal.
+- **Billing:** Stripe webhooks are the source of truth for subscription state, processed
+  idempotently. Plan limits (seats, clients, invoices per month) are enforced by the API.
+
+## Project structure
+
+```
+apps/
+  api/     Express REST API, Prisma schema and migrations
+  web/     React single-page app (marketing site, agency app, client portal)
+```
+
+## Getting started
+
+Requirements: Node.js 20+ and PostgreSQL 14+.
+
+```bash
+npm install
+cp apps/api/.env.example apps/api/.env      # then fill in DATABASE_URL and the JWT secrets
+createdb ledgerly && createdb ledgerly_test
+npm run db:migrate                          # apply migrations and generate the Prisma client
+npm run dev                                 # API on :4100, web on :5180
+```
+
+| Command             | What it does                     |
+| ------------------- | -------------------------------- |
+| `npm run dev`       | Run the API and web app together |
+| `npm test`          | Run the API test suite           |
+| `npm run typecheck` | Type-check both apps             |
+| `npm run build`     | Production build of both apps    |
+
+## Roadmap
+
+- [x] **Phase 1:** monorepo scaffold, data model, API foundation, UI shell, CI
+- [ ] **Phase 2:** authentication, organizations, tenant isolation
+- [ ] **Phase 3:** team invitations and role-based access
+- [ ] **Phase 4:** clients, projects, invoices, PDF export
+- [ ] **Phase 5:** Stripe subscriptions, webhooks, billing page, plan limits
+- [ ] **Phase 6:** client portal with online invoice payments
+- [ ] **Phase 7:** revenue dashboard, transactional emails, overdue reminders
+- [ ] **Phase 8:** demo data, end-to-end tests, deployment
