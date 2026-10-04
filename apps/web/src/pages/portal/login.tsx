@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { MailCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Navigate, useSearchParams } from 'react-router';
+import { Navigate, useNavigate, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { FormError, FormField } from '@/components/form-field';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { FullPageSpinner, Spinner } from '@/components/ui/spinner';
 import { applyServerErrors } from '@/lib/forms';
+import { usePortalDemoLogin } from '@/lib/demo';
 import { usePortalMe, useRequestPortalLink } from '@/lib/portal';
 import { PortalBrand, usePortalOrg } from './portal-layout';
 
@@ -20,6 +21,8 @@ export function PortalLoginPage() {
   const [params] = useSearchParams();
   const me = usePortalMe(org.slug);
   const request = useRequestPortalLink(org.slug);
+  const demo = usePortalDemoLogin(org.slug);
+  const navigate = useNavigate();
   const [sentTo, setSentTo] = useState<string | null>(null);
   const {
     register,
@@ -87,6 +90,20 @@ export function PortalLoginPage() {
                   {request.isPending && <Spinner />} Email me a sign-in link
                 </Button>
               </form>
+              {org.isDemo && (
+                <Button
+                  variant="outline"
+                  className="mt-3 w-full"
+                  disabled={demo.isPending}
+                  onClick={() =>
+                    demo.mutate(undefined, {
+                      onSuccess: () => navigate(`/portal/${org.slug}/invoices`),
+                    })
+                  }
+                >
+                  {demo.isPending && <Spinner />} Demo: view as a sample client
+                </Button>
+              )}
             </>
           )}
         </CardContent>

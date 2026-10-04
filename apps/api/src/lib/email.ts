@@ -41,15 +41,18 @@ export async function sendEmail({
   subject,
   template,
   attachments = [],
+  deliver = true,
 }: {
   to: string;
   subject: string;
   template: ReactElement;
   attachments?: EmailAttachment[];
+  /** false = capture in the outbox only (used by the public demo so it can't email real people). */
+  deliver?: boolean;
 }) {
   const [html, text] = await Promise.all([render(template), render(template, { plainText: true })]);
 
-  if (resend && env.NODE_ENV !== 'test') {
+  if (resend && deliver && env.NODE_ENV !== 'test') {
     const { error } = await resend.emails.send({
       from: env.EMAIL_FROM,
       to,

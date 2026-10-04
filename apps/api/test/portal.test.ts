@@ -67,6 +67,7 @@ describe('portal sign-in', () => {
       slug,
       brandColor: '#4f46e5',
       logoUrl: null,
+      isDemo: false,
     });
     expect((await request(app).get('/api/portal/nope/info')).status).toBe(404);
   });

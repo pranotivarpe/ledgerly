@@ -6,6 +6,7 @@ import { can } from '../lib/permissions.js';
 import { prisma } from '../lib/prisma.js';
 import { generateToken, hashToken } from '../lib/tokens.js';
 import { getAuth, getTenant, requirePermission } from '../middleware/tenant.js';
+import { forbidInDemo } from '../middleware/demo.js';
 import { parseBody } from '../middleware/validate.js';
 import {
   assertSeatAvailable,
@@ -62,37 +63,45 @@ teamRouter.get('/members', async (req, res) => {
   });
 });
 
-teamRouter.patch('/members/:memberId', requirePermission('members:update'), async (req, res) => {
-  const { db, role: actorRole, organization } = getTenant(req);
-  const { userId } = getAuth(req);
-  const { role: newRole } = parseBody(z.object({ role: roleSchema }), req);
+teamRouter.patch(
+  '/members/:memberId',
+  requirePermission('members:update'),
+  forbidInDemo,
+  async (req, res) => {
+    const { db, role: actorRole, organization } = getTenant(req);
+    const { userId } = getAuth(req);
+    const { role: newRole } = parseBody(z.object({ role: roleSchema }), req);
 
-  const target = await db.membership.findUnique({ where: { id: String(req.params.memberId) } });
-  if (!target) throw HttpError.notFound('Member not found');
-  if (target.role === newRole) {
-    res.json({ member: { id: target.id, role: target.role } });
-    return;
-  }
+    const target = await db.membership.findUnique({ where: { id: String(req.params.memberId) } });
+    if (!target) throw HttpError.notFound('Member not found');
+    if (target.role === newRole) {
+      res.json({ member: { id: target.id, role: target.role } });
+      return;
+    }
 
-  assertCanManage(actorRole, target.role, newRole);
-  if (newRole !== 'OWNER') await assertNotLastOwner(organization.id, target.role);
+    assertCanManage(actorRole, target.role, newRole);
+    if (newRole !== 'OWNER') await assertNotLastOwner(organization.id, target.role);
 
-  const updated = await db.membership.update({ where: { id: target.id }, data: { role: newRole } });
-  await db.activityLog.create({
-    data: {
-      organizationId: organization.id,
-      actorId: userId,
-      action: 'member.role_changed',
-      entityType: 'membership',
-      entityId: target.id,
-      metadata: { from: target.role, to: newRole },
-    },
-  });
-  res.json({ member: { id: updated.id, role: updated.role } });
-});
+    const updated = await db.membership.update({
+      where: { id: target.id },
+      data: { role: newRole },
+    });
+    await db.activityLog.create({
+      data: {
+        organizationId: organization.id,
+        actorId: userId,
+        action: 'member.role_changed',
+        entityType: 'membership',
+        entityId: target.id,
+        metadata: { from: target.role, to: newRole },
+      },
+    });
+    res.json({ member: { id: updated.id, role: updated.role } });
+  },
+);
 
 /** Remove a member — or leave, when the target is yourself (allowed for every role). */
-teamRouter.delete('/members/:memberId', async (req, res) => {
+teamRouter.delete('/members/:memberId', forbidInDemo, async (req, res) => {
   const { db, role: actorRole, organization } = getTenant(req);
   const { userId } = getAuth(req);
 
@@ -141,57 +150,64 @@ teamRouter.get('/invitations', requirePermission('members:invite'), async (req, 
   });
 });
 
-teamRouter.post('/invitations', requirePermission('members:invite'), async (req, res) => {
-  const { db, organization } = getTenant(req);
-  const { userId } = getAuth(req);
-  const { email, role } = parseBody(inviteSchema, req);
+teamRouter.post(
+  '/invitations',
+  requirePermission('members:invite'),
+  forbidInDemo,
+  async (req, res) => {
+    const { db, organization } = getTenant(req);
+    const { userId } = getAuth(req);
+    const { email, role } = parseBody(inviteSchema, req);
 
-  const alreadyMember = await db.membership.findFirst({ where: { user: { email } } });
-  if (alreadyMember) throw HttpError.conflict(`${email} is already a member of this organization`);
+    const alreadyMember = await db.membership.findFirst({ where: { user: { email } } });
+    if (alreadyMember)
+      throw HttpError.conflict(`${email} is already a member of this organization`);
 
-  // Re-inviting the same email replaces the old invitation instead of using another seat.
-  const existing = await db.invitation.findFirst({ where: { email, acceptedAt: null } });
-  if (!existing || existing.expiresAt < new Date()) await assertSeatAvailable(db, organization);
+    // Re-inviting the same email replaces the old invitation instead of using another seat.
+    const existing = await db.invitation.findFirst({ where: { email, acceptedAt: null } });
+    if (!existing || existing.expiresAt < new Date()) await assertSeatAvailable(db, organization);
 
-  const invitation = existing
-    ? await db.invitation.update({
-        where: { id: existing.id },
-        data: { role, invitedById: userId },
-      })
-    : await db.invitation.create({
-        data: {
-          organizationId: organization.id,
-          email,
-          role,
-          invitedById: userId,
-          tokenHash: hashToken(generateToken()), // replaced when the email is issued
-          expiresAt: inviteExpiry(),
-        },
-      });
+    const invitation = existing
+      ? await db.invitation.update({
+          where: { id: existing.id },
+          data: { role, invitedById: userId },
+        })
+      : await db.invitation.create({
+          data: {
+            organizationId: organization.id,
+            email,
+            role,
+            invitedById: userId,
+            tokenHash: hashToken(generateToken()), // replaced when the email is issued
+            expiresAt: inviteExpiry(),
+          },
+        });
 
-  const inviter = await prisma.user.findUniqueOrThrow({
-    where: { id: userId },
-    select: { name: true },
-  });
-  const emailSent = await issueAndSendInvite(invitation, organization, inviter.name);
+    const inviter = await prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { name: true },
+    });
+    const emailSent = await issueAndSendInvite(invitation, organization, inviter.name);
 
-  await db.activityLog.create({
-    data: {
-      organizationId: organization.id,
-      actorId: userId,
-      action: 'member.invited',
-      entityType: 'invitation',
-      entityId: invitation.id,
-      metadata: { email, role },
-    },
-  });
+    await db.activityLog.create({
+      data: {
+        organizationId: organization.id,
+        actorId: userId,
+        action: 'member.invited',
+        entityType: 'invitation',
+        entityId: invitation.id,
+        metadata: { email, role },
+      },
+    });
 
-  res.status(201).json({ invitation: { id: invitation.id, email, role }, emailSent });
-});
+    res.status(201).json({ invitation: { id: invitation.id, email, role }, emailSent });
+  },
+);
 
 teamRouter.post(
   '/invitations/:invitationId/resend',
   requirePermission('members:invite'),
+  forbidInDemo,
   async (req, res) => {
     const { db, organization } = getTenant(req);
     const { userId } = getAuth(req);

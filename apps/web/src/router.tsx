@@ -1,39 +1,32 @@
 import { createBrowserRouter } from 'react-router';
 import { AppIndexRedirect, GuestOnly, RequireAuth } from '@/components/route-guards';
-import { AppLayout } from '@/layouts/app-layout';
-import { BillingPage } from '@/pages/app/billing';
-import { ClientDetailPage } from '@/pages/app/client-detail';
-import { ClientsPage } from '@/pages/app/clients';
-import { CreateOrgPage } from '@/pages/app/create-org';
-import { DashboardPage } from '@/pages/app/dashboard';
-import { InvoiceDetailPage } from '@/pages/app/invoice-detail';
-import { InvoiceEditorPage } from '@/pages/app/invoice-editor';
-import { InvoicesPage } from '@/pages/app/invoices';
-import { ProjectsPage } from '@/pages/app/projects';
-import { SettingsPage } from '@/pages/app/settings';
-import { TeamPage } from '@/pages/app/team';
 import { LoginPage } from '@/pages/auth/login';
 import { SignupPage } from '@/pages/auth/signup';
 import { LandingPage } from '@/pages/marketing/landing';
-import { InvitePage } from '@/pages/invite';
-import { PortalInvoicePage } from '@/pages/portal/invoice';
-import { PortalInvoicesPage } from '@/pages/portal/invoices';
-import { PortalLoginPage } from '@/pages/portal/login';
-import { PortalLayout } from '@/pages/portal/portal-layout';
-import { PortalVerifyPage } from '@/pages/portal/verify';
 import { NotFoundPage } from '@/pages/not-found';
+
+/**
+ * Marketing and auth pages ship in the main bundle (first visit is instant); everything behind a
+ * login is code-split per route and fetched on navigation.
+ */
+const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) => ({
+  lazy: async () => ({ Component: (await load())[name] }),
+});
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
-  { path: '/invite/:token', element: <InvitePage /> },
+  { path: '/invite/:token', ...page(() => import('@/pages/invite'), 'InvitePage') },
   {
     path: '/portal/:orgSlug',
-    element: <PortalLayout />,
+    ...page(() => import('@/pages/portal/portal-layout'), 'PortalLayout'),
     children: [
-      { index: true, element: <PortalLoginPage /> },
-      { path: 'verify', element: <PortalVerifyPage /> },
-      { path: 'invoices', element: <PortalInvoicesPage /> },
-      { path: 'invoices/:invoiceId', element: <PortalInvoicePage /> },
+      { index: true, ...page(() => import('@/pages/portal/login'), 'PortalLoginPage') },
+      { path: 'verify', ...page(() => import('@/pages/portal/verify'), 'PortalVerifyPage') },
+      { path: 'invoices', ...page(() => import('@/pages/portal/invoices'), 'PortalInvoicesPage') },
+      {
+        path: 'invoices/:invoiceId',
+        ...page(() => import('@/pages/portal/invoice'), 'PortalInvoicePage'),
+      },
     ],
   },
   {
@@ -48,22 +41,34 @@ export const router = createBrowserRouter([
     element: <RequireAuth />,
     children: [
       { index: true, element: <AppIndexRedirect /> },
-      { path: 'new', element: <CreateOrgPage /> },
+      { path: 'new', ...page(() => import('@/pages/app/create-org'), 'CreateOrgPage') },
       {
         path: ':orgSlug',
-        element: <AppLayout />,
+        ...page(() => import('@/layouts/app-layout'), 'AppLayout'),
         children: [
-          { index: true, element: <DashboardPage /> },
-          { path: 'clients', element: <ClientsPage /> },
-          { path: 'clients/:clientId', element: <ClientDetailPage /> },
-          { path: 'projects', element: <ProjectsPage /> },
-          { path: 'invoices', element: <InvoicesPage /> },
-          { path: 'invoices/new', element: <InvoiceEditorPage /> },
-          { path: 'invoices/:invoiceId', element: <InvoiceDetailPage /> },
-          { path: 'invoices/:invoiceId/edit', element: <InvoiceEditorPage /> },
-          { path: 'team', element: <TeamPage /> },
-          { path: 'billing', element: <BillingPage /> },
-          { path: 'settings', element: <SettingsPage /> },
+          { index: true, ...page(() => import('@/pages/app/dashboard'), 'DashboardPage') },
+          { path: 'clients', ...page(() => import('@/pages/app/clients'), 'ClientsPage') },
+          {
+            path: 'clients/:clientId',
+            ...page(() => import('@/pages/app/client-detail'), 'ClientDetailPage'),
+          },
+          { path: 'projects', ...page(() => import('@/pages/app/projects'), 'ProjectsPage') },
+          { path: 'invoices', ...page(() => import('@/pages/app/invoices'), 'InvoicesPage') },
+          {
+            path: 'invoices/new',
+            ...page(() => import('@/pages/app/invoice-editor'), 'InvoiceEditorPage'),
+          },
+          {
+            path: 'invoices/:invoiceId',
+            ...page(() => import('@/pages/app/invoice-detail'), 'InvoiceDetailPage'),
+          },
+          {
+            path: 'invoices/:invoiceId/edit',
+            ...page(() => import('@/pages/app/invoice-editor'), 'InvoiceEditorPage'),
+          },
+          { path: 'team', ...page(() => import('@/pages/app/team'), 'TeamPage') },
+          { path: 'billing', ...page(() => import('@/pages/app/billing'), 'BillingPage') },
+          { path: 'settings', ...page(() => import('@/pages/app/settings'), 'SettingsPage') },
         ],
       },
     ],

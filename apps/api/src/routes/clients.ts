@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { logActivity } from '../lib/activity.js';
 import { HttpError } from '../lib/http-error.js';
 import { prisma } from '../lib/prisma.js';
+import { forbidInDemo } from '../middleware/demo.js';
 import { getAuth, getTenant, requirePermission } from '../middleware/tenant.js';
 import { parseBody } from '../middleware/validate.js';
 import { markOverdue } from '../services/invoice.service.js';
@@ -159,26 +160,33 @@ clientsRouter.patch('/:clientId', requirePermission('clients:write'), async (req
 });
 
 /** Clients with invoice history can only be archived, so financial records stay intact. */
-clientsRouter.delete('/:clientId', requirePermission('clients:write'), async (req, res) => {
-  const { db } = getTenant(req);
-  const client = await db.client.findUnique({
-    where: { id: String(req.params.clientId) },
-    include: { _count: { select: { invoices: true } } },
-  });
-  if (!client) throw HttpError.notFound('Client not found');
-  if (client._count.invoices > 0) {
-    throw HttpError.conflict('This client has invoices. Archive it instead to keep your records.');
-  }
+clientsRouter.delete(
+  '/:clientId',
+  requirePermission('clients:write'),
+  forbidInDemo,
+  async (req, res) => {
+    const { db } = getTenant(req);
+    const client = await db.client.findUnique({
+      where: { id: String(req.params.clientId) },
+      include: { _count: { select: { invoices: true } } },
+    });
+    if (!client) throw HttpError.notFound('Client not found');
+    if (client._count.invoices > 0) {
+      throw HttpError.conflict(
+        'This client has invoices. Archive it instead to keep your records.',
+      );
+    }
 
-  await db.client.delete({ where: { id: client.id } });
-  await logActivity(
-    req,
-    'client.deleted',
-    { type: 'client', id: client.id },
-    { name: client.name },
-  );
-  res.status(204).end();
-});
+    await db.client.delete({ where: { id: client.id } });
+    await logActivity(
+      req,
+      'client.deleted',
+      { type: 'client', id: client.id },
+      { name: client.name },
+    );
+    res.status(204).end();
+  },
+);
 
 /** Emails the client a 7-day sign-in link to the client portal. */
 clientsRouter.post(

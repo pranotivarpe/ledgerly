@@ -18,6 +18,7 @@ import {
 } from '../services/invitation.service.js';
 import { sendWelcome } from '../services/notification.service.js';
 import { createSession, revokeSession, rotateSession } from '../services/session.service.js';
+import { DEMO_USERS } from '../demo/seed-demo.js';
 
 export const authRouter = Router();
 
@@ -157,5 +158,37 @@ authRouter.get('/me', requireAuth, async (req, res) => {
   res.json({
     user: toUserDto(user),
     organizations: user.memberships.map((m) => toOrgSummary(m.organization, m.role)),
+  });
+});
+
+/** Whether the one-click demo is available (the login page shows the demo buttons if so). */
+authRouter.get('/demo', async (_req, res) => {
+  const org = env.DEMO_ENABLED
+    ? await prisma.organization.findFirst({ where: { isDemo: true }, select: { slug: true } })
+    : null;
+  res.json({ enabled: Boolean(org), portalSlug: org?.slug ?? null });
+});
+
+/** One-click demo login (public demo only). Signs in as one of the seeded demo users. */
+authRouter.post('/demo', authLimiter, async (req, res) => {
+  if (!env.DEMO_ENABLED) throw HttpError.notFound();
+  const { role } = parseBody(z.object({ role: z.enum(['OWNER', 'ADMIN', 'MEMBER']) }), req);
+
+  const demoUser = DEMO_USERS.find((u) => u.role === role)!;
+  const user = await prisma.user.findUnique({
+    where: { email: demoUser.email },
+    include: {
+      memberships: { where: { organization: { isDemo: true } }, include: { organization: true } },
+    },
+  });
+  const membership = user?.memberships[0];
+  if (!user || !membership)
+    throw new HttpError(503, 'The demo is being reset — try again in a minute', 'DEMO_UNAVAILABLE');
+
+  const tokens = await createSession(user.id, req);
+  setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+  res.json({
+    user: toUserDto(user),
+    organization: toOrgSummary(membership.organization, membership.role),
   });
 });

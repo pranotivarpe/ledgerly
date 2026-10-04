@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { logActivity } from '../lib/activity.js';
 import { HttpError } from '../lib/http-error.js';
 import { getTenant, requirePermission } from '../middleware/tenant.js';
+import { forbidInDemo } from '../middleware/demo.js';
 import { parseBody } from '../middleware/validate.js';
 
 export const projectsRouter = Router({ mergeParams: true });
@@ -107,17 +108,22 @@ projectsRouter.patch('/:projectId', requirePermission('projects:write'), async (
 });
 
 /** Deleting a project keeps its invoices (they just lose the project link). */
-projectsRouter.delete('/:projectId', requirePermission('projects:write'), async (req, res) => {
-  const { db } = getTenant(req);
-  const project = await db.project.findUnique({ where: { id: String(req.params.projectId) } });
-  if (!project) throw HttpError.notFound('Project not found');
+projectsRouter.delete(
+  '/:projectId',
+  requirePermission('projects:write'),
+  forbidInDemo,
+  async (req, res) => {
+    const { db } = getTenant(req);
+    const project = await db.project.findUnique({ where: { id: String(req.params.projectId) } });
+    if (!project) throw HttpError.notFound('Project not found');
 
-  await db.project.delete({ where: { id: project.id } });
-  await logActivity(
-    req,
-    'project.deleted',
-    { type: 'project', id: project.id },
-    { name: project.name },
-  );
-  res.status(204).end();
-});
+    await db.project.delete({ where: { id: project.id } });
+    await logActivity(
+      req,
+      'project.deleted',
+      { type: 'project', id: project.id },
+      { name: project.name },
+    );
+    res.status(204).end();
+  },
+);

@@ -298,6 +298,7 @@ invoicesRouter.post('/:invoiceId/send', requirePermission('invoices:write'), asy
 
   try {
     await sendEmail({
+      deliver: !organization.isDemo,
       to: invoice.client.email,
       subject: `${isReminder ? 'Reminder: ' : ''}Invoice ${invoice.number} from ${organization.name}`,
       template: createElement(InvoiceEmail, {

@@ -99,6 +99,8 @@ model Organization {
   currency  String   @default("USD")
   address   String?
   invoicePrefix     String @default("INV")
+  /// The public demo workspace: shared by all visitors, reset daily, with emails and billing disabled.
+  isDemo            Boolean @default(false)
   nextInvoiceNumber Int    @default(1)
 
   // Billing (Stripe is the source of truth; these are synced via webhooks)

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { FormError, FormField } from '@/components/form-field';
+import { DemoPanel } from '@/components/demo-panel';
 import { safeNext } from '@/components/route-guards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,6 +77,10 @@ export function LoginPage() {
           {login.isPending && <Spinner />} Log in
         </Button>
       </form>
+      <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+      </div>
+      <DemoPanel highlight={params.get('demo') === '1'} />
     </AuthLayout>
   );
 }

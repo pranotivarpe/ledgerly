@@ -5,6 +5,7 @@ import { toOrgDetail, toOrgSummary } from '../lib/serializers.js';
 import { uniqueOrgSlug } from '../lib/slug.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getAuth, getTenant, loadTenant, requirePermission } from '../middleware/tenant.js';
+import { forbidInDemo } from '../middleware/demo.js';
 import { parseBody } from '../middleware/validate.js';
 import { billingRouter } from './billing.js';
 import { clientsRouter } from './clients.js';
@@ -66,7 +67,7 @@ orgRouter.get('/', (req, res) => {
   res.json({ organization: toOrgDetail(organization, role) });
 });
 
-orgRouter.patch('/', requirePermission('org:update'), async (req, res) => {
+orgRouter.patch('/', requirePermission('org:update'), forbidInDemo, async (req, res) => {
   const { organization, role, db } = getTenant(req);
   const { userId } = getAuth(req);
   const data = parseBody(updateSchema, req);

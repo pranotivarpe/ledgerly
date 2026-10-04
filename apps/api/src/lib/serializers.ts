@@ -28,5 +28,6 @@ export function toOrgDetail(org: Organization, role: Role) {
     cancelAtPeriodEnd: org.cancelAtPeriodEnd,
     createdAt: org.createdAt,
     permissions: permissionsFor(role),
+    isDemo: org.isDemo,
   };
 }

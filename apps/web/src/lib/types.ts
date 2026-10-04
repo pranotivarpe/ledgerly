@@ -35,6 +35,7 @@ export type OrgDetail = OrgSummary & {
   cancelAtPeriodEnd: boolean;
   createdAt: string;
   permissions: Permission[];
+  isDemo: boolean;
 };
 
 export type Me = { user: User; organizations: OrgSummary[] };

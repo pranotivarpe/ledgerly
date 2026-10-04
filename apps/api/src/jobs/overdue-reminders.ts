@@ -61,6 +61,7 @@ export async function runOverdueReminders(now = new Date()) {
       invoicePayLink(org, invoice),
     ]);
     const ok = await sendEmailSafely({
+      deliver: !org.isDemo,
       to: invoice.client.email,
       subject: `Reminder: invoice ${invoice.number} from ${org.name} is overdue`,
       template: createElement(InvoiceEmail, {

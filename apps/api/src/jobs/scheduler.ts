@@ -1,5 +1,6 @@
 import { env } from '../env.js';
 import { logger } from '../lib/logger.js';
+import { ensureDemoExists, resetDemo } from '../demo/reset.js';
 import { runOverdueReminders } from './overdue-reminders.js';
 
 const HOUR = 60 * 60 * 1000;
@@ -14,13 +15,17 @@ export function startScheduler() {
 
   const run = () =>
     runOverdueReminders().catch((err) => logger.error({ err }, 'overdue reminders job failed'));
-  const first = setTimeout(run, 30_000);
-  const interval = setInterval(run, HOUR);
-  first.unref();
-  interval.unref();
-  logger.info('⏰ scheduler started (overdue reminders hourly)');
-  return () => {
-    clearTimeout(first);
-    clearInterval(interval);
-  };
+  const timers: NodeJS.Timeout[] = [setTimeout(run, 30_000), setInterval(run, HOUR)];
+
+  if (env.DEMO_ENABLED) {
+    const fail = (err: unknown) => logger.error({ err }, 'demo reset failed');
+    ensureDemoExists().catch(fail);
+    timers.push(setInterval(() => resetDemo().catch(fail), 24 * HOUR));
+  }
+
+  timers.forEach((t) => t.unref());
+  logger.info(
+    `⏰ scheduler started (overdue reminders hourly${env.DEMO_ENABLED ? ', demo reset daily' : ''})`,
+  );
+  return () => timers.forEach((t) => clearTimeout(t));
 }

@@ -31,6 +31,7 @@ export async function notifyInvoicePaidOnline(invoiceId: string) {
   const amount = formatMoney(invoice.totalCents, invoice.currency);
 
   await sendEmailSafely({
+    deliver: !org.isDemo,
     to: client.email,
     subject: `Receipt: ${amount} paid to ${org.name} (${invoice.number})`,
     template: createElement(PaymentReceiptEmail, {
@@ -47,6 +48,7 @@ export async function notifyInvoicePaidOnline(invoiceId: string) {
   await Promise.all(
     recipients.map((to) =>
       sendEmailSafely({
+        deliver: !org.isDemo,
         to,
         subject: `💸 ${client.company || client.name} paid ${amount} (${invoice.number})`,
         template: createElement(PaymentNotificationEmail, {
@@ -70,6 +72,7 @@ export async function notifyBillingFailed(
   await Promise.all(
     owners.map((to) =>
       sendEmailSafely({
+        deliver: !org.isDemo,
         to,
         subject: `Action needed: your Ledgerly payment of ${amount} failed`,
         template: createElement(BillingFailedEmail, {

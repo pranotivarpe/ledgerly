@@ -56,7 +56,7 @@ export async function createPortalLinkUrl(
 
 /** Creates a magic link and emails it to the contact. */
 export async function sendPortalLink(
-  org: Pick<Organization, 'id' | 'name' | 'slug'>,
+  org: Pick<Organization, 'id' | 'name' | 'slug' | 'isDemo'>,
   contact: { id: string; email: string; name: string },
   options: { ttlMs: number; next?: string; invitedBy?: string },
 ) {
@@ -64,6 +64,7 @@ export async function sendPortalLink(
 
   const minutes = Math.round(options.ttlMs / 60_000);
   await sendEmail({
+    deliver: !org.isDemo,
     to: contact.email,
     subject: options.invitedBy
       ? `${org.name} invited you to their client portal`

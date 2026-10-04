@@ -87,7 +87,10 @@ export function SettingsPage() {
           <CardContent>
             {!canEdit && (
               <div className="mb-6 flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-                <Lock className="size-4" /> Only owners and admins can change these settings.
+                <Lock className="size-4" />{' '}
+                {org.isDemo
+                  ? 'Settings are read-only in the demo workspace.'
+                  : 'Only owners and admins can change these settings.'}
               </div>
             )}
             <FormError message={errors.root?.message} />

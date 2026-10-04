@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from './api';
 import type { Invoice, InvoiceStatus } from './invoices';
 
-export type PortalOrg = { name: string; slug: string; brandColor: string; logoUrl: string | null };
+export type PortalOrg = {
+  name: string;
+  slug: string;
+  brandColor: string;
+  logoUrl: string | null;
+  isDemo: boolean;
+};
 
 export type PortalMe = {
   contact: { name: string; email: string };

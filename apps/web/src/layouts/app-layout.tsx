@@ -119,6 +119,17 @@ export function AppLayout() {
           <Logo />
         </header>
 
+        {org.isDemo && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-foreground px-4 py-2 text-center text-sm text-background">
+            <span>
+              You're exploring a demo workspace as <strong>{org.role.toLowerCase()}</strong>. Data
+              resets daily; emails and billing are disabled.
+            </span>
+            <Link to="/signup" className="font-semibold underline underline-offset-2">
+              Create your own workspace
+            </Link>
+          </div>
+        )}
         {org.subscriptionStatus === 'PAST_DUE' && org.permissions.includes('billing:manage') && (
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-destructive px-4 py-2 text-center text-sm text-white">
             <span>

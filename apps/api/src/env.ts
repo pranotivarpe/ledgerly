@@ -19,6 +19,11 @@ const schema = z.object({
     .default('true')
     .transform((v) => v === 'true'),
   CRON_SECRET: z.string().min(16).optional(),
+  // Public demo: one-click demo logins and a daily reset of the demo workspace.
+  DEMO_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
 });
 
 const parsed = schema.safeParse(process.env);

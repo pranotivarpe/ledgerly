@@ -100,8 +100,10 @@ export function BillingPage() {
 
       {!canManage && (
         <div className="mb-6 flex items-center gap-2 rounded-lg bg-muted px-4 py-3 text-sm text-muted-foreground">
-          <Lock className="size-4" /> Only organization owners can change the plan or payment
-          details.
+          <Lock className="size-4" />{' '}
+          {org.isDemo
+            ? 'Billing is disabled in the demo workspace — sign up to try real Stripe checkout.'
+            : 'Only organization owners can change the plan or payment details.'}
         </div>
       )}
 

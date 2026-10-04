@@ -10,6 +10,17 @@ export function useCurrentOrg() {
   return org;
 }
 
+/** Actions the API refuses in the shared demo workspace (mirrors the forbidInDemo middleware). */
+const DEMO_BLOCKED: Permission[] = [
+  'org:update',
+  'billing:manage',
+  'members:invite',
+  'members:update',
+  'members:remove',
+];
+
 export function useCan(permission: Permission) {
-  return useCurrentOrg().permissions.includes(permission);
+  const org = useCurrentOrg();
+  if (org.isDemo && DEMO_BLOCKED.includes(permission)) return false;
+  return org.permissions.includes(permission);
 }

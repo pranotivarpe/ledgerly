@@ -9,6 +9,7 @@ import { forTenant } from '../lib/tenant.js';
 import { signPortalToken } from '../lib/tokens.js';
 import { getPortal, loadPortalOrg, requirePortalSession } from '../middleware/portal.js';
 import { parseBody } from '../middleware/validate.js';
+import { DEMO_CLIENT_EMAIL } from '../demo/seed-demo.js';
 import { renderInvoicePdf } from '../pdf/invoice-pdf.js';
 import { recordInvoiceCheckout } from '../services/invoice-payment.service.js';
 import {
@@ -49,6 +50,7 @@ portalRouter.get('/info', async (req, res) => {
       slug: org.slug,
       brandColor: org.brandColor,
       logoUrl: org.logoUrl,
+      isDemo: org.isDemo,
     },
   });
 });
@@ -81,6 +83,17 @@ portalRouter.post('/verify', loginLimiter, async (req, res) => {
   const contact = await consumeMagicLink(org.id, token);
   if (!contact) throw HttpError.badRequest('This sign-in link is invalid or has expired');
 
+  setPortalCookie(res, await signPortalToken(contact.id, org.id));
+  res.json({ contact: { name: contact.name, email: contact.email } });
+});
+
+/** One-click client-portal demo: signs in as the demo agency's sample client. */
+portalRouter.post('/demo', loginLimiter, async (req, res) => {
+  const org = await loadPortalOrg(req);
+  if (!env.DEMO_ENABLED || !org.isDemo) throw HttpError.notFound();
+  const contact = await findOrCreateContact(org.id, DEMO_CLIENT_EMAIL);
+  if (!contact)
+    throw new HttpError(503, 'The demo is being reset — try again in a minute', 'DEMO_UNAVAILABLE');
   setPortalCookie(res, await signPortalToken(contact.id, org.id));
   res.json({ contact: { name: contact.name, email: contact.email } });
 });
