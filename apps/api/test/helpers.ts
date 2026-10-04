@@ -41,3 +41,16 @@ export function getCookie(setCookie: string[] | string | undefined, name: string
   const match = list.find((c) => c.startsWith(`${name}=`));
   return match?.split(';')[0]?.slice(name.length + 1);
 }
+
+/** Pulls the invitation token out of the most recent email in the dev outbox. */
+export async function latestInviteToken() {
+  const { getOutbox } = await import('../src/lib/email.js');
+  const email = getOutbox()[0];
+  const token = email?.text.match(/\/invite\/([A-Za-z0-9_-]+)/)?.[1];
+  if (!token) throw new Error('No invitation email found');
+  return { token, email: email! };
+}
+
+export async function setPlan(orgId: string, plan: 'FREE' | 'PRO' | 'TEAM') {
+  await prisma.organization.update({ where: { id: orgId }, data: { plan } });
+}

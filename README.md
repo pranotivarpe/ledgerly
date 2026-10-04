@@ -31,6 +31,10 @@ online through a branded portal. Agencies pay for Ledgerly itself through Stripe
 - **Authentication:** short-lived JWT access token + rotating, revocable refresh token, both in
   httpOnly cookies. Passwords hashed with scrypt. Origin-checked against CSRF, rate-limited auth
   endpoints, no account enumeration on login.
+- **Team & invitations:** single-use, expiring invite links (only a hash is stored). Pending
+  invites count toward the plan's seat limit, and an organization can never lose its last owner.
+- **Email:** React Email templates sent through Resend. Without an API key, emails are captured in a
+  dev outbox at `/api/dev/emails`, so the full invite flow works locally with zero setup.
 - **Billing:** Stripe webhooks are the source of truth for subscription state, processed
   idempotently. Plan limits (seats, clients, invoices per month) are enforced by the API.
 
@@ -65,7 +69,7 @@ npm run dev                                 # API on :4100, web on :5180
 
 - [x] **Phase 1:** monorepo scaffold, data model, API foundation, UI shell, CI
 - [x] **Phase 2:** authentication, organizations, tenant isolation
-- [ ] **Phase 3:** team invitations and role-based access
+- [x] **Phase 3:** team invitations and role-based access
 - [ ] **Phase 4:** clients, projects, invoices, PDF export
 - [ ] **Phase 5:** Stripe subscriptions, webhooks, billing page, plan limits
 - [ ] **Phase 6:** client portal with online invoice payments

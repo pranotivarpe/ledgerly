@@ -33,7 +33,8 @@ export type SignupInput = {
   name: string;
   email: string;
   password: string;
-  organizationName: string;
+  organizationName?: string;
+  inviteToken?: string;
 };
 export type LoginInput = { email: string; password: string };
 

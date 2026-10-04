@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from 'react-router';
+import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router';
 import { FullPageSpinner } from '@/components/ui/spinner';
 import { useMe } from '@/lib/auth';
 import { LAST_ORG_KEY, storage } from '@/lib/storage';
@@ -16,11 +16,15 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
-/** Login/signup pages: signed-in users skip straight to the app. */
+/**
+ * Login/signup pages: signed-in users skip straight to the app — or to `?next=`, so this guard
+ * agrees with the login form's own redirect when the session appears mid-login.
+ */
 export function GuestOnly() {
   const { data: me, isPending } = useMe();
+  const [params] = useSearchParams();
   if (isPending) return <FullPageSpinner />;
-  if (me) return <Navigate to="/app" replace />;
+  if (me) return <Navigate to={safeNext(params.get('next'))} replace />;
   return <Outlet />;
 }
 

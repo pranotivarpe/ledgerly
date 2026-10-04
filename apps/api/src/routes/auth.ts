@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
-import { env } from '../env.js';
+import { env, isProd } from '../env.js';
 import { clearAuthCookies, REFRESH_COOKIE, setAuthCookies } from '../lib/cookies.js';
 import { HttpError } from '../lib/http-error.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
@@ -11,13 +11,18 @@ import { uniqueOrgSlug } from '../lib/slug.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getAuth } from '../middleware/tenant.js';
 import { parseBody } from '../middleware/validate.js';
+import {
+  acceptInvitation,
+  findInvitationByToken,
+  invitationState,
+} from '../services/invitation.service.js';
 import { createSession, revokeSession, rotateSession } from '../services/session.service.js';
 
 export const authRouter = Router();
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 20,
+  limit: isProd ? 20 : 500, // strict in production, out of the way during local development
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   skip: () => env.NODE_ENV === 'test',
@@ -27,12 +32,19 @@ const authLimiter = rateLimit({
 const email = z.email().trim().toLowerCase().max(254);
 const password = z.string().min(8, 'Password must be at least 8 characters').max(128);
 
-const signupSchema = z.object({
-  name: z.string().trim().min(1).max(80),
-  email,
-  password,
-  organizationName: z.string().trim().min(2).max(80),
-});
+const signupSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80),
+    email,
+    password,
+    organizationName: z.string().trim().min(2).max(80).optional(),
+    // Signing up from an invitation link joins that organization instead of creating one.
+    inviteToken: z.string().min(1).optional(),
+  })
+  .refine((v) => v.inviteToken || v.organizationName, {
+    path: ['organizationName'],
+    message: 'Organization name is required',
+  });
 
 const loginSchema = z.object({ email, password: z.string().min(1).max(128) });
 
@@ -45,10 +57,38 @@ authRouter.post('/signup', authLimiter, async (req, res) => {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw HttpError.conflict('An account with this email already exists');
 
-  const [passwordHash, slug] = await Promise.all([
-    hashPassword(input.password),
-    uniqueOrgSlug(input.organizationName),
-  ]);
+  const passwordHash = await hashPassword(input.password);
+
+  if (input.inviteToken) {
+    const invitation = await findInvitationByToken(input.inviteToken);
+    if (!invitation || invitationState(invitation) !== 'pending') {
+      throw HttpError.badRequest('This invitation is no longer valid');
+    }
+    if (invitation.email !== input.email) {
+      throw HttpError.badRequest(`This invitation was sent to ${invitation.email}`);
+    }
+    // The invite link proves ownership of the address.
+    const user = await prisma.user.create({
+      data: { name: input.name, email: input.email, passwordHash, emailVerified: new Date() },
+    });
+    const membership = await acceptInvitation(
+      invitation.id,
+      user.id,
+      invitation.role,
+      invitation.organizationId,
+    );
+
+    const tokens = await createSession(user.id, req);
+    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+    res.status(201).json({
+      user: toUserDto(user),
+      organizations: [toOrgSummary(invitation.organization, membership.role)],
+    });
+    return;
+  }
+
+  const organizationName = input.organizationName!;
+  const slug = await uniqueOrgSlug(organizationName);
 
   const { user, organization } = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
@@ -56,7 +96,7 @@ authRouter.post('/signup', authLimiter, async (req, res) => {
     });
     const organization = await tx.organization.create({
       data: {
-        name: input.organizationName,
+        name: organizationName,
         slug,
         memberships: { create: { userId: user.id, role: 'OWNER' } },
         activity: { create: { actorId: user.id, action: 'organization.created' } },

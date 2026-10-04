@@ -3,12 +3,14 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
-import { env } from './env.js';
+import { env, isProd } from './env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { originCheck } from './middleware/origin-check.js';
 import { authRouter } from './routes/auth.js';
+import { devRouter } from './routes/dev.js';
 import { healthRouter } from './routes/health.js';
+import { invitationsRouter } from './routes/invitations.js';
 import { organizationsRouter } from './routes/organizations.js';
 
 export function createApp() {
@@ -27,6 +29,8 @@ export function createApp() {
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/orgs', organizationsRouter);
+  app.use('/api/invitations', invitationsRouter);
+  if (!isProd) app.use('/api/dev', devRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

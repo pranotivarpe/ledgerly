@@ -5,13 +5,16 @@ import { ComingSoonPage } from '@/pages/app/coming-soon';
 import { CreateOrgPage } from '@/pages/app/create-org';
 import { DashboardPage } from '@/pages/app/dashboard';
 import { SettingsPage } from '@/pages/app/settings';
+import { TeamPage } from '@/pages/app/team';
 import { LoginPage } from '@/pages/auth/login';
 import { SignupPage } from '@/pages/auth/signup';
 import { LandingPage } from '@/pages/marketing/landing';
+import { InvitePage } from '@/pages/invite';
 import { NotFoundPage } from '@/pages/not-found';
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
+  { path: '/invite/:token', element: <InvitePage /> },
   {
     element: <GuestOnly />,
     children: [
@@ -46,12 +49,7 @@ export const router = createBrowserRouter([
               <ComingSoonPage title="Invoices" description="Create, send and track invoices." />
             ),
           },
-          {
-            path: 'team',
-            element: (
-              <ComingSoonPage title="Team" description="Invite teammates and manage roles." />
-            ),
-          },
+          { path: 'team', element: <TeamPage /> },
           {
             path: 'billing',
             element: (

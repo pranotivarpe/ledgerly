@@ -12,6 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
+    "jsx": "react-jsx",
     "outDir": "dist",
     "rootDir": "."
   },

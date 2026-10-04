@@ -8,6 +8,9 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
+  // Email: without a Resend key, emails are logged and kept in a dev outbox (/api/dev/emails).
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('Ledgerly <onboarding@resend.dev>'),
 });
 
 const parsed = schema.safeParse(process.env);

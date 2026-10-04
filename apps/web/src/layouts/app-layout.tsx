@@ -33,7 +33,7 @@ import { OrgContext } from '@/lib/org-context';
 import { PLANS } from '@/lib/plans';
 import { LAST_ORG_KEY, storage } from '@/lib/storage';
 import type { OrgSummary, Role } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, initials } from '@/lib/utils';
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean };
 
@@ -213,15 +213,6 @@ function OrgSwitcher({ current }: { current: OrgSummary }) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 function UserMenu({ role }: { role: Role }) {

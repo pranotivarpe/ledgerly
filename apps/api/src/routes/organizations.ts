@@ -6,6 +6,7 @@ import { uniqueOrgSlug } from '../lib/slug.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getAuth, getTenant, loadTenant, requirePermission } from '../middleware/tenant.js';
 import { parseBody } from '../middleware/validate.js';
+import { teamRouter } from './team.js';
 
 export const organizationsRouter = Router();
 
@@ -48,6 +49,7 @@ organizationsRouter.post('/', async (req, res) => {
 // Everything below is scoped to one organization the user is a member of.
 const orgRouter = Router({ mergeParams: true });
 organizationsRouter.use('/:orgSlug', loadTenant, orgRouter);
+orgRouter.use(teamRouter);
 
 orgRouter.get('/', (req, res) => {
   const { organization, role } = getTenant(req);
