@@ -6,6 +6,7 @@ import { uniqueOrgSlug } from '../lib/slug.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getAuth, getTenant, loadTenant, requirePermission } from '../middleware/tenant.js';
 import { parseBody } from '../middleware/validate.js';
+import { billingRouter } from './billing.js';
 import { clientsRouter } from './clients.js';
 import { dashboardRouter } from './dashboard.js';
 import { invoicesRouter } from './invoices.js';
@@ -58,6 +59,7 @@ orgRouter.use('/clients', clientsRouter);
 orgRouter.use('/projects', projectsRouter);
 orgRouter.use('/invoices', invoicesRouter);
 orgRouter.use('/dashboard', dashboardRouter);
+orgRouter.use('/billing', billingRouter);
 
 orgRouter.get('/', (req, res) => {
   const { organization, role } = getTenant(req);

@@ -1,9 +1,9 @@
 import { createBrowserRouter } from 'react-router';
 import { AppIndexRedirect, GuestOnly, RequireAuth } from '@/components/route-guards';
 import { AppLayout } from '@/layouts/app-layout';
+import { BillingPage } from '@/pages/app/billing';
 import { ClientDetailPage } from '@/pages/app/client-detail';
 import { ClientsPage } from '@/pages/app/clients';
-import { ComingSoonPage } from '@/pages/app/coming-soon';
 import { CreateOrgPage } from '@/pages/app/create-org';
 import { DashboardPage } from '@/pages/app/dashboard';
 import { InvoiceDetailPage } from '@/pages/app/invoice-detail';
@@ -47,12 +47,7 @@ export const router = createBrowserRouter([
           { path: 'invoices/:invoiceId', element: <InvoiceDetailPage /> },
           { path: 'invoices/:invoiceId/edit', element: <InvoiceEditorPage /> },
           { path: 'team', element: <TeamPage /> },
-          {
-            path: 'billing',
-            element: (
-              <ComingSoonPage title="Billing" description="Your plan, usage and payment details." />
-            ),
-          },
+          { path: 'billing', element: <BillingPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
       },

@@ -39,8 +39,12 @@ online through a branded portal. Agencies pay for Ledgerly itself through Stripe
   Invoice numbers come from an atomic per-organization sequence (safe under concurrent requests).
   Sent invoices are immutable (void and duplicate to correct them), and branded PDFs are rendered
   server-side with `@react-pdf/renderer` and attached to the invoice email.
-- **Billing:** Stripe webhooks are the source of truth for subscription state, processed
-  idempotently. Plan limits (seats, clients, invoices per month) are enforced by the API.
+- **Billing:** Stripe Checkout for new subscriptions, in-app plan switching with proration, and the
+  Stripe Customer Portal for cards, invoices and cancellation. Webhooks are signature-verified,
+  processed exactly once (`StripeEvent` table), and never trust the event payload: they re-fetch
+  the latest subscription so out-of-order delivery can't corrupt state. Returning from Checkout also
+  triggers a sync, so the UI never waits on webhook latency. Plan limits (seats, clients, invoices
+  per month) are enforced by the API, and downgrades that would exceed the new seat limit are blocked.
 
 ## Project structure
 
@@ -75,7 +79,7 @@ npm run dev                                 # API on :4100, web on :5180
 - [x] **Phase 2:** authentication, organizations, tenant isolation
 - [x] **Phase 3:** team invitations and role-based access
 - [x] **Phase 4:** clients, projects, invoices, PDF export
-- [ ] **Phase 5:** Stripe subscriptions, webhooks, billing page, plan limits
+- [x] **Phase 5:** Stripe subscriptions, webhooks, billing page, plan limits
 - [ ] **Phase 6:** client portal with online invoice payments
 - [ ] **Phase 7:** revenue dashboard, transactional emails, overdue reminders
 - [ ] **Phase 8:** demo data, end-to-end tests, deployment

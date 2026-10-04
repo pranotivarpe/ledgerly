@@ -12,6 +12,7 @@ import { devRouter } from './routes/dev.js';
 import { healthRouter } from './routes/health.js';
 import { invitationsRouter } from './routes/invitations.js';
 import { organizationsRouter } from './routes/organizations.js';
+import { webhooksRouter } from './routes/webhooks.js';
 
 export function createApp() {
   const app = express();
@@ -22,6 +23,8 @@ export function createApp() {
   app.use(helmet());
   app.use(cors({ origin: env.WEB_URL, credentials: true }));
   app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/api/health' } }));
+  // Webhooks need the raw request body for signature verification — mount before express.json().
+  app.use('/api/webhooks', webhooksRouter);
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
   app.use(originCheck);

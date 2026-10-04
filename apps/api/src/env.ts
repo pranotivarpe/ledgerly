@@ -11,6 +11,8 @@ const schema = z.object({
   // Email: without a Resend key, emails are logged and kept in a dev outbox (/api/dev/emails).
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default('Ledgerly <onboarding@resend.dev>'),
+  STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsed = schema.safeParse(process.env);

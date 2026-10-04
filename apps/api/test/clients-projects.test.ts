@@ -110,15 +110,12 @@ describe('projects', () => {
   it('creates projects for a client and reports billed totals', async () => {
     const { agent, org } = await signUp();
     const client = await createClient(agent, org.slug);
-    const created = await agent
-      .post(`/api/orgs/${org.slug}/projects`)
-      .set('Origin', ORIGIN)
-      .send({
-        clientId: client.id,
-        name: 'Website redesign',
-        budgetCents: 800_000,
-        dueDate: '2026-12-01',
-      });
+    const created = await agent.post(`/api/orgs/${org.slug}/projects`).set('Origin', ORIGIN).send({
+      clientId: client.id,
+      name: 'Website redesign',
+      budgetCents: 800_000,
+      dueDate: '2026-12-01',
+    });
     expect(created.status).toBe(201);
 
     await createInvoice(agent, org.slug, client.id, { projectId: created.body.project.id });

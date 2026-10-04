@@ -119,6 +119,19 @@ export function AppLayout() {
           <Logo />
         </header>
 
+        {org.subscriptionStatus === 'PAST_DUE' && org.permissions.includes('billing:manage') && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-destructive px-4 py-2 text-center text-sm text-white">
+            <span>
+              Your last subscription payment failed. Update your card to keep paid features.
+            </span>
+            <Link
+              to={`/app/${org.slug}/billing`}
+              className="font-semibold underline underline-offset-2"
+            >
+              Fix billing
+            </Link>
+          </div>
+        )}
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           <Outlet />
         </main>

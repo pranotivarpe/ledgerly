@@ -1,5 +1,6 @@
 import {
   CircleCheck,
+  CreditCard,
   FileText,
   FolderKanban,
   Mail,
@@ -12,6 +13,12 @@ import {
 } from 'lucide-react';
 import type { ActivityItem } from '@/lib/dashboard';
 import { formatMoney, timeAgo } from '@/lib/utils';
+
+const titleCase = (v: unknown) =>
+  String(v ?? '').charAt(0) +
+  String(v ?? '')
+    .slice(1)
+    .toLowerCase();
 
 function describe(a: ActivityItem, currency: string): { icon: LucideIcon; text: string } {
   const m = (a.metadata ?? {}) as Record<string, string | number | undefined>;
@@ -59,6 +66,15 @@ function describe(a: ActivityItem, currency: string): { icon: LucideIcon; text: 
       return { icon: Users, text: `${who} removed a team member` };
     case 'member.role_changed':
       return { icon: Users, text: `${who} changed a role to ${String(m.to).toLowerCase()}` };
+    case 'billing.plan_changed':
+      return {
+        icon: CreditCard,
+        text: `Plan changed from ${titleCase(m.from)} to ${titleCase(m.to)}`,
+      };
+    case 'billing.plan_change_requested':
+      return { icon: CreditCard, text: `${who} switched the plan to ${titleCase(m.to)}` };
+    case 'billing.payment_failed':
+      return { icon: XCircle, text: 'A subscription payment failed' };
     case 'organization.created':
       return { icon: Settings, text: `${who} created the workspace` };
     case 'organization.updated':
