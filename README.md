@@ -6,8 +6,9 @@ Agencies sign up, invite their team, manage clients and projects, and send brand
 clients pay online through a portal. Agencies pay for Ledgerly itself on a Free / Pro / Team
 subscription.
 
-**[Live demo →](#live-demo)** · One click, no sign-up: try it as an agency owner, a team member, or a
-client paying an invoice.
+**[▶ Live demo: ledgerly-gjtu.onrender.com](https://ledgerly-gjtu.onrender.com/login?demo=1)** · One click, no
+sign-up: try it as an agency owner, a team member, or a client paying an invoice. _(Free hosting:
+the first load can take ~30 seconds while the server wakes up.)_
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
