@@ -16,7 +16,7 @@ devRouter.get('/emails', (_req, res) => {
     .map(
       (e) => `<tr>
         <td><a href="/api/dev/emails/${e.id}" target="preview">${escape(e.subject)}</a></td>
-        <td>${escape(e.to)}</td>
+        <td>${escape(e.to)}${e.attachments.map((a) => `<br><small>📎 ${escape(a.filename)}</small>`).join('')}</td>
         <td>${e.sentAt.toLocaleTimeString()}</td>
       </tr>`,
     )

@@ -54,3 +54,52 @@ export async function latestInviteToken() {
 export async function setPlan(orgId: string, plan: 'FREE' | 'PRO' | 'TEAM') {
   await prisma.organization.update({ where: { id: orgId }, data: { plan } });
 }
+
+export async function createClient(
+  agent: request.Agent,
+  slug: string,
+  overrides: Record<string, unknown> = {},
+) {
+  const res = await agent
+    .post(`/api/orgs/${slug}/clients`)
+    .set('Origin', ORIGIN)
+    .send({
+      name: 'Acme Robotics',
+      email: 'billing@acme.test',
+      company: 'Acme Robotics Inc.',
+      ...overrides,
+    });
+  if (res.status !== 201)
+    throw new Error(`create client failed: ${res.status} ${JSON.stringify(res.body)}`);
+  return res.body.client as { id: string; name: string };
+}
+
+export function invoiceBody(clientId: string, overrides: Record<string, unknown> = {}) {
+  return {
+    clientId,
+    issueDate: '2026-10-01',
+    dueDate: '2099-10-31',
+    taxRateBps: 1000,
+    notes: 'Thanks for your business',
+    items: [
+      { description: 'Website design', quantity: 1, unitPriceCents: 250_000 },
+      { description: 'Development (hours)', quantity: 12.5, unitPriceCents: 9_000 },
+    ],
+    ...overrides,
+  };
+}
+
+export async function createInvoice(
+  agent: request.Agent,
+  slug: string,
+  clientId: string,
+  overrides = {},
+) {
+  const res = await agent
+    .post(`/api/orgs/${slug}/invoices`)
+    .set('Origin', ORIGIN)
+    .send(invoiceBody(clientId, overrides));
+  if (res.status !== 201)
+    throw new Error(`create invoice failed: ${res.status} ${JSON.stringify(res.body)}`);
+  return res.body.invoice as { id: string; number: string; totalCents: number; status: string };
+}

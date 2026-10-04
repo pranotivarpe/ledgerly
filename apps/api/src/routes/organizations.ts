@@ -6,6 +6,10 @@ import { uniqueOrgSlug } from '../lib/slug.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getAuth, getTenant, loadTenant, requirePermission } from '../middleware/tenant.js';
 import { parseBody } from '../middleware/validate.js';
+import { clientsRouter } from './clients.js';
+import { dashboardRouter } from './dashboard.js';
+import { invoicesRouter } from './invoices.js';
+import { projectsRouter } from './projects.js';
 import { teamRouter } from './team.js';
 
 export const organizationsRouter = Router();
@@ -50,6 +54,10 @@ organizationsRouter.post('/', async (req, res) => {
 const orgRouter = Router({ mergeParams: true });
 organizationsRouter.use('/:orgSlug', loadTenant, orgRouter);
 orgRouter.use(teamRouter);
+orgRouter.use('/clients', clientsRouter);
+orgRouter.use('/projects', projectsRouter);
+orgRouter.use('/invoices', invoicesRouter);
+orgRouter.use('/dashboard', dashboardRouter);
 
 orgRouter.get('/', (req, res) => {
   const { organization, role } = getTenant(req);

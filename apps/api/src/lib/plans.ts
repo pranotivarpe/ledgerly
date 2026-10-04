@@ -11,3 +11,7 @@ export const PLAN_LIMITS: Record<
 };
 
 export const PLAN_NAMES: Record<Plan, string> = { FREE: 'Free', PRO: 'Pro', TEAM: 'Team' };
+
+export function startOfMonth(date = new Date()) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}

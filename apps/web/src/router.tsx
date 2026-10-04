@@ -1,9 +1,15 @@
 import { createBrowserRouter } from 'react-router';
 import { AppIndexRedirect, GuestOnly, RequireAuth } from '@/components/route-guards';
 import { AppLayout } from '@/layouts/app-layout';
+import { ClientDetailPage } from '@/pages/app/client-detail';
+import { ClientsPage } from '@/pages/app/clients';
 import { ComingSoonPage } from '@/pages/app/coming-soon';
 import { CreateOrgPage } from '@/pages/app/create-org';
 import { DashboardPage } from '@/pages/app/dashboard';
+import { InvoiceDetailPage } from '@/pages/app/invoice-detail';
+import { InvoiceEditorPage } from '@/pages/app/invoice-editor';
+import { InvoicesPage } from '@/pages/app/invoices';
+import { ProjectsPage } from '@/pages/app/projects';
 import { SettingsPage } from '@/pages/app/settings';
 import { TeamPage } from '@/pages/app/team';
 import { LoginPage } from '@/pages/auth/login';
@@ -33,22 +39,13 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
-          {
-            path: 'clients',
-            element: <ComingSoonPage title="Clients" description="The companies you work with." />,
-          },
-          {
-            path: 'projects',
-            element: (
-              <ComingSoonPage title="Projects" description="Work you're delivering for clients." />
-            ),
-          },
-          {
-            path: 'invoices',
-            element: (
-              <ComingSoonPage title="Invoices" description="Create, send and track invoices." />
-            ),
-          },
+          { path: 'clients', element: <ClientsPage /> },
+          { path: 'clients/:clientId', element: <ClientDetailPage /> },
+          { path: 'projects', element: <ProjectsPage /> },
+          { path: 'invoices', element: <InvoicesPage /> },
+          { path: 'invoices/new', element: <InvoiceEditorPage /> },
+          { path: 'invoices/:invoiceId', element: <InvoiceDetailPage /> },
+          { path: 'invoices/:invoiceId/edit', element: <InvoiceEditorPage /> },
           { path: 'team', element: <TeamPage /> },
           {
             path: 'billing',

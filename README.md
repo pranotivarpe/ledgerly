@@ -35,6 +35,10 @@ online through a branded portal. Agencies pay for Ledgerly itself through Stripe
   invites count toward the plan's seat limit, and an organization can never lose its last owner.
 - **Email:** React Email templates sent through Resend. Without an API key, emails are captured in a
   dev outbox at `/api/dev/emails`, so the full invite flow works locally with zero setup.
+- **Invoicing:** money is stored as integer cents and totals are always recomputed on the server.
+  Invoice numbers come from an atomic per-organization sequence (safe under concurrent requests).
+  Sent invoices are immutable (void and duplicate to correct them), and branded PDFs are rendered
+  server-side with `@react-pdf/renderer` and attached to the invoice email.
 - **Billing:** Stripe webhooks are the source of truth for subscription state, processed
   idempotently. Plan limits (seats, clients, invoices per month) are enforced by the API.
 
@@ -70,7 +74,7 @@ npm run dev                                 # API on :4100, web on :5180
 - [x] **Phase 1:** monorepo scaffold, data model, API foundation, UI shell, CI
 - [x] **Phase 2:** authentication, organizations, tenant isolation
 - [x] **Phase 3:** team invitations and role-based access
-- [ ] **Phase 4:** clients, projects, invoices, PDF export
+- [x] **Phase 4:** clients, projects, invoices, PDF export
 - [ ] **Phase 5:** Stripe subscriptions, webhooks, billing page, plan limits
 - [ ] **Phase 6:** client portal with online invoice payments
 - [ ] **Phase 7:** revenue dashboard, transactional emails, overdue reminders

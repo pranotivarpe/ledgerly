@@ -5,12 +5,15 @@ import { Resend } from 'resend';
 import { env } from '../env.js';
 import { logger } from './logger.js';
 
+export type EmailAttachment = { filename: string; content: Buffer };
+
 export type OutboxEmail = {
   id: string;
   to: string;
   subject: string;
   html: string;
   text: string;
+  attachments: { filename: string; size: number }[];
   sentAt: Date;
 };
 
@@ -37,21 +40,38 @@ export async function sendEmail({
   to,
   subject,
   template,
+  attachments = [],
 }: {
   to: string;
   subject: string;
   template: ReactElement;
+  attachments?: EmailAttachment[];
 }) {
   const [html, text] = await Promise.all([render(template), render(template, { plainText: true })]);
 
   if (resend && env.NODE_ENV !== 'test') {
-    const { error } = await resend.emails.send({ from: env.EMAIL_FROM, to, subject, html, text });
+    const { error } = await resend.emails.send({
+      from: env.EMAIL_FROM,
+      to,
+      subject,
+      html,
+      text,
+      attachments,
+    });
     if (error) throw new Error(`Email delivery failed: ${error.message}`);
     logger.info({ to, subject }, 'email sent');
     return;
   }
 
-  outbox.unshift({ id: randomUUID(), to, subject, html, text, sentAt: new Date() });
+  outbox.unshift({
+    id: randomUUID(),
+    to,
+    subject,
+    html,
+    text,
+    attachments: attachments.map((a) => ({ filename: a.filename, size: a.content.length })),
+    sentAt: new Date(),
+  });
   outbox.length = Math.min(outbox.length, OUTBOX_LIMIT);
   if (env.NODE_ENV === 'development') {
     logger.info({ to, subject }, `📧 email captured — view at ${env.WEB_URL}/api/dev/emails`);
