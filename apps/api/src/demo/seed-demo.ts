@@ -202,8 +202,14 @@ export async function seedDemo(prisma: PrismaClient, log: (msg: string) => void 
   if (drafts[6]) drafts[6].status = 'VOID';
 
   let number = 1;
+  const acmeOpen = { sent: false, overdue: false };
   for (const d of drafts) {
-    const client = pick(weighted);
+    // The portal demo signs in as Acme, so give Acme something to pay (one open, one overdue).
+    const acme = clientByCompany.get('Acme Robotics')!;
+    const forAcme =
+      (d.status === 'SENT' && !acmeOpen.sent) || (d.status === 'OVERDUE' && !acmeOpen.overdue);
+    if (forAcme) acmeOpen[d.status === 'SENT' ? 'sent' : 'overdue'] = true;
+    const client = forAcme ? acme : pick(weighted);
     const project = projects.find((p) => p.clientId === client.id && rand() > 0.3) ?? null;
     const items = Array.from({ length: between(1, 3) }, () => {
       const [description, qty, min, max] = pick(LINE_ITEMS);
