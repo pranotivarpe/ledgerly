@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react';
+import { Link } from 'react-router';
 import { cn } from '@/lib/utils';
 
 export function Table({ className, ...props }: ComponentProps<'table'>) {
@@ -19,6 +20,22 @@ export function TableBody({ className, ...props }: ComponentProps<'tbody'>) {
 
 export function TableRow({ className, ...props }: ComponentProps<'tr'>) {
   return <tr className={cn('border-b transition-colors', className)} {...props} />;
+}
+
+/**
+ * A real link whose hit area stretches over its whole row (the row needs `relative`), so rows can
+ * be opened in a new tab, are reachable by keyboard, and read as links to screen readers.
+ */
+export function RowLink({ className, ...props }: ComponentProps<typeof Link>) {
+  return (
+    <Link
+      className={cn(
+        'outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset',
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function TableHead({ className, ...props }: ComponentProps<'th'>) {

@@ -1,0 +1,17 @@
+name: Keep demo warm
+
+# Render's free plan sleeps the service after 15 idle minutes, and the next visitor waits ~30s for
+# it to wake. Pinging every 10 minutes during working hours (weekdays, ~8am–10pm IST) keeps the
+# live demo instant when clients are likely to open it, while using well under half of the
+# 750 free instance-hours a month that the workspace's free services share.
+on:
+  schedule:
+    - cron: '*/10 2-16 * * 1-5' # UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: curl --fail --silent --show-error --max-time 120 --retry 2 https://ledgerly-gjtu.onrender.com/api/health

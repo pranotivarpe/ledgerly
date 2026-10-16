@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import {
+  RowLink,
   Table,
   TableBody,
   TableCell,
@@ -108,13 +109,11 @@ export function ClientsPage() {
               </TableHeader>
               <TableBody>
                 {clients.data?.map((c) => (
-                  <TableRow
-                    key={c.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate(`/app/${org.slug}/clients/${c.id}`)}
-                  >
+                  <TableRow key={c.id} className="relative hover:bg-muted/50">
                     <TableCell>
-                      <p className="font-medium">{c.company || c.name}</p>
+                      <RowLink to={`/app/${org.slug}/clients/${c.id}`} className="font-medium">
+                        {c.company || c.name}
+                      </RowLink>
                       {c.company && <p className="text-xs text-muted-foreground">{c.name}</p>}
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground md:table-cell">

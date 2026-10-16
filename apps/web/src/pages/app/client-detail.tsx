@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FullPageSpinner, Spinner } from '@/components/ui/spinner';
 import {
+  RowLink,
   Table,
   TableBody,
   TableCell,
@@ -183,12 +184,10 @@ export function ClientDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {client.invoices.map((inv) => (
-                      <TableRow
-                        key={inv.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/app/${org.slug}/invoices/${inv.id}`)}
-                      >
-                        <TableCell className="font-medium">{inv.number}</TableCell>
+                      <TableRow key={inv.id} className="relative hover:bg-muted/50">
+                        <TableCell className="font-medium">
+                          <RowLink to={`/app/${org.slug}/invoices/${inv.id}`}>{inv.number}</RowLink>
+                        </TableCell>
                         <TableCell className="hidden text-muted-foreground sm:table-cell">
                           {formatDate(inv.issueDate)}
                         </TableCell>

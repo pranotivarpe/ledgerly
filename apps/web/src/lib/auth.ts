@@ -8,21 +8,11 @@ export const meQueryKey = ['me'] as const;
 export function useMe() {
   return useQuery({
     queryKey: meQueryKey,
+    // /auth/session refreshes an expired access token itself and answers `user: null` (not 401)
+    // when logged out, so a first visit doesn't log failed requests in the console.
     queryFn: async () => {
-      try {
-        return await api<Me>('/auth/me');
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 401) {
-          // Access token may simply be expired — try the refresh token once.
-          const refreshed = await fetch('/api/auth/refresh', {
-            method: 'POST',
-            credentials: 'include',
-          });
-          if (refreshed.ok) return api<Me>('/auth/me');
-          return null;
-        }
-        throw err;
-      }
+      const session = await api<Me | { user: null }>('/auth/session');
+      return session.user ? (session as Me) : null;
     },
     staleTime: 5 * 60_000,
     retry: false,

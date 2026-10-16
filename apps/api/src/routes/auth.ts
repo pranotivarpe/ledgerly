@@ -8,7 +8,7 @@ import { hashPassword, verifyPassword } from '../lib/password.js';
 import { prisma } from '../lib/prisma.js';
 import { toOrgSummary, toUserDto } from '../lib/serializers.js';
 import { uniqueOrgSlug } from '../lib/slug.js';
-import { requireAuth } from '../middleware/auth.js';
+import { readAccessToken, requireAuth } from '../middleware/auth.js';
 import { getAuth } from '../middleware/tenant.js';
 import { parseBody } from '../middleware/validate.js';
 import {
@@ -147,18 +147,45 @@ authRouter.post('/logout', async (req, res) => {
   res.status(204).end();
 });
 
-authRouter.get('/me', requireAuth, async (req, res) => {
-  const { userId } = getAuth(req);
+async function loadMe(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { memberships: { include: { organization: true }, orderBy: { createdAt: 'asc' } } },
   });
-  if (!user) throw HttpError.unauthorized();
+  return user
+    ? {
+        user: toUserDto(user),
+        organizations: user.memberships.map((m) => toOrgSummary(m.organization, m.role)),
+      }
+    : null;
+}
 
-  res.json({
-    user: toUserDto(user),
-    organizations: user.memberships.map((m) => toOrgSummary(m.organization, m.role)),
-  });
+authRouter.get('/me', requireAuth, async (req, res) => {
+  const me = await loadMe(getAuth(req).userId);
+  if (!me) throw HttpError.unauthorized();
+  res.json(me);
+});
+
+/**
+ * Session bootstrap for the web app's first load. Unlike /me it never answers 401: a visitor with
+ * no session gets `{ user: null }`, and an expired access token is refreshed in the same request.
+ */
+authRouter.get('/session', async (req, res) => {
+  let userId = (await readAccessToken(req))?.userId;
+
+  const refreshToken = req.cookies?.[REFRESH_COOKIE];
+  if (!userId && refreshToken) {
+    const tokens = await rotateSession(refreshToken, req);
+    if (tokens) {
+      setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+      userId = tokens.userId;
+    } else {
+      clearAuthCookies(res);
+    }
+  }
+
+  const me = userId ? await loadMe(userId) : null;
+  res.set('Cache-Control', 'no-store').json(me ?? { user: null, organizations: [] });
 });
 
 /** Whether the one-click demo is available (the login page shows the demo buttons if so). */

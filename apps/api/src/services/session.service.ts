@@ -7,7 +7,7 @@ function clientMeta(req: Request) {
 }
 
 async function issueTokens(userId: string, sessionId: string, refreshToken: string) {
-  return { accessToken: await signAccessToken(userId, sessionId), refreshToken };
+  return { userId, accessToken: await signAccessToken(userId, sessionId), refreshToken };
 }
 
 export async function createSession(userId: string, req: Request) {

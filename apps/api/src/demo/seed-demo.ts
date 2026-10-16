@@ -11,6 +11,7 @@
 import type { InvoiceStatus, PrismaClient } from '../generated/prisma/client.js';
 import { computeTotals, lineAmountCents } from '../lib/money.js';
 import { hashPassword } from '../lib/password.js';
+import { startOfMonth } from '../lib/plans.js';
 
 export const DEMO_SLUG = 'northwind';
 export const DEMO_PASSWORD = 'demo-password';
@@ -185,6 +186,10 @@ export async function seedDemo(prisma: PrismaClient, log: (msg: string) => void 
       drafts.push({ issueDate: issue, status });
     }
   }
+  // Early in a month the random days above can all land in the future; keep "this month" non-empty
+  // whichever day the demo resets on (it becomes the in-progress draft below).
+  if (!drafts.some((d) => d.issueDate >= startOfMonth(now)))
+    drafts.push({ issueDate: utcDay(now), status: 'DRAFT' });
   drafts.sort((a, b) => a.issueDate.getTime() - b.issueDate.getTime());
   // A believable mix of open work: two overdue invoices from ~6 weeks ago, two awaiting
   // payment, a draft in progress, and one voided invoice further back.

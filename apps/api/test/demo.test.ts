@@ -1,6 +1,8 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { resetDemoIfStale } from '../src/demo/reset.js';
 import { seedDemo } from '../src/demo/seed-demo.js';
+import { startOfMonth } from '../src/lib/plans.js';
 import { clearOutbox, getOutbox } from '../src/lib/email.js';
 import { prisma } from '../src/lib/prisma.js';
 import { app, createClient, createInvoice, ORIGIN, resetDb, signUp } from './helpers.js';
@@ -40,6 +42,27 @@ describe('public demo', () => {
       dash.body.revenueByMonth.filter((m: { totalCents: number }) => m.totalCents > 0).length,
     ).toBeGreaterThan(8);
     expect(dash.body.topClients[0].name).toBeTruthy();
+  });
+
+  it('always has invoices in the current month', async () => {
+    const count = await prisma.invoice.count({
+      where: { organization: { isDemo: true }, createdAt: { gte: startOfMonth() } },
+    });
+    expect(count).toBeGreaterThan(0);
+  });
+
+  it('re-seeds only once the demo is more than a day old', async () => {
+    const demo = () => prisma.organization.findFirstOrThrow({ where: { isDemo: true } });
+    const fresh = await demo();
+    await resetDemoIfStale();
+    expect((await demo()).id).toBe(fresh.id);
+
+    await prisma.organization.update({
+      where: { id: fresh.id },
+      data: { createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) },
+    });
+    await resetDemoIfStale();
+    expect((await demo()).id).not.toBe(fresh.id);
   });
 
   it('blocks actions that would affect other visitors', async () => {

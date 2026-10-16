@@ -9,7 +9,7 @@ import {
   Plus,
   Sparkles,
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { ActivityFeed } from '@/components/activity-feed';
 import { PageHeader } from '@/components/page-header';
 import { RevenueChart, TopClients } from '@/components/revenue-chart';
@@ -17,6 +17,7 @@ import { InvoiceStatusBadge } from '@/components/status-badges';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { RowLink } from '@/components/ui/table';
 import { useMe } from '@/lib/auth';
 import { useDashboard, type Dashboard } from '@/lib/dashboard';
 import { useCan, useCurrentOrg } from '@/lib/org-context';
@@ -172,7 +173,6 @@ function StatCards({ data }: { data: Dashboard }) {
 
 function RecentInvoices({ data }: { data: Dashboard }) {
   const org = useCurrentOrg();
-  const navigate = useNavigate();
   return (
     <Card className="h-fit lg:col-span-2">
       <CardHeader className="flex-row items-center justify-between">
@@ -195,13 +195,15 @@ function RecentInvoices({ data }: { data: Dashboard }) {
             {data.recentInvoices.map((inv) => (
               <li
                 key={inv.id}
-                className="flex cursor-pointer items-center gap-4 px-6 py-3 hover:bg-muted/50"
-                onClick={() => navigate(`/app/${org.slug}/invoices/${inv.id}`)}
+                className="relative flex items-center gap-4 px-6 py-3 hover:bg-muted/50"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
+                  <RowLink
+                    to={`/app/${org.slug}/invoices/${inv.id}`}
+                    className="block truncate text-sm font-medium"
+                  >
                     {inv.client.company || inv.client.name}
-                  </p>
+                  </RowLink>
                   <p className="text-xs text-muted-foreground">
                     {inv.number} · due {formatDate(inv.dueDate)}
                   </p>

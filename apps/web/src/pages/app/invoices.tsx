@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, FileText, Plus } from 'lucide-react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { SearchInput } from '@/components/search-input';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import {
+  RowLink,
   Table,
   TableBody,
   TableCell,
@@ -30,7 +31,6 @@ const TABS: { label: string; value?: InvoiceStatus }[] = [
 
 export function InvoicesPage() {
   const org = useCurrentOrg();
-  const navigate = useNavigate();
   const canWrite = useCan('invoices:write');
   // Filters live in the URL so they survive reloads and can be shared.
   const [params, setParams] = useSearchParams();
@@ -144,13 +144,11 @@ export function InvoicesPage() {
               </TableHeader>
               <TableBody>
                 {data?.invoices.map((inv) => (
-                  <TableRow
-                    key={inv.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate(`/app/${org.slug}/invoices/${inv.id}`)}
-                  >
+                  <TableRow key={inv.id} className="relative hover:bg-muted/50">
                     <TableCell>
-                      <p className="font-medium">{inv.number}</p>
+                      <RowLink to={`/app/${org.slug}/invoices/${inv.id}`} className="font-medium">
+                        {inv.number}
+                      </RowLink>
                       <p className="text-xs text-muted-foreground">
                         {inv.client.company || inv.client.name}
                       </p>

@@ -106,6 +106,34 @@ describe('sessions', () => {
     ]);
   });
 
+  it('GET /session answers 200 with no user when logged out', async () => {
+    const res = await request(app).get('/api/auth/session');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ user: null, organizations: [] });
+  });
+
+  it('GET /session returns the user, refreshing an expired access token', async () => {
+    const signup = await request(app).post('/api/auth/signup').set('Origin', ORIGIN).send({
+      name: 'S',
+      email: 'session@example.com',
+      password: 'session-password',
+      organizationName: 'Session Co',
+    });
+    const refresh = getCookie(signup.headers['set-cookie'], 'll_refresh');
+
+    // Only the refresh cookie, as after the 15-minute access token has expired.
+    const res = await request(app).get('/api/auth/session').set('Cookie', `ll_refresh=${refresh}`);
+    expect(res.status).toBe(200);
+    expect(res.body.user).toEqual(expect.objectContaining({ email: 'session@example.com' }));
+    expect(getCookie(res.headers['set-cookie'], 'll_access')).toBeTruthy();
+
+    // The refresh token was rotated, so replaying the old one yields no user.
+    const replay = await request(app)
+      .get('/api/auth/session')
+      .set('Cookie', `ll_refresh=${refresh}`);
+    expect(replay.body.user).toBeNull();
+  });
+
   it('rotates refresh tokens: the old one stops working after use', async () => {
     const signup = await request(app).post('/api/auth/signup').set('Origin', ORIGIN).send({
       name: 'R',
